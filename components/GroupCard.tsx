@@ -7,6 +7,8 @@ interface GroupCardProps {
   onStatusChange: (groupNumber: number, newStatus: QueueStatus) => void;
   onNotify: (group: Group) => void;
   isNotifying: boolean;
+  isSelected?: boolean;
+  onSelect?: (groupNumber: number, selected: boolean) => void;
 }
 
 const statusColors = {
@@ -23,13 +25,23 @@ const statusLabels = {
   completed: 'Completed',
 };
 
-export default function GroupCard({ group, onStatusChange, onNotify, isNotifying }: GroupCardProps) {
+export default function GroupCard({ group, onStatusChange, onNotify, isNotifying, isSelected, onSelect }: GroupCardProps) {
   return (
-    <div className={`border-2 rounded-lg p-4 ${statusColors[group.status]} transition-colors`}>
+    <div className={`border-2 rounded-lg p-4 ${statusColors[group.status]} ${isSelected ? 'ring-4 ring-indigo-500' : ''} transition-all`}>
       <div className="flex justify-between items-start mb-3">
-        <div>
-          <h3 className="text-lg font-bold">Group {group.groupNumber}</h3>
-          <p className="text-sm text-gray-600">{group.members.length} member{group.members.length !== 1 ? 's' : ''}</p>
+        <div className="flex items-start gap-3">
+          {onSelect && (
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={(e) => onSelect(group.groupNumber, e.target.checked)}
+              className="mt-1 h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+          )}
+          <div>
+            <h3 className="text-lg font-bold">Group {group.groupNumber}</h3>
+            <p className="text-sm text-gray-600">{group.members.length} member{group.members.length !== 1 ? 's' : ''}</p>
+          </div>
         </div>
         <span className="text-xs font-semibold px-2 py-1 rounded-full bg-white/50">
           {statusLabels[group.status]}

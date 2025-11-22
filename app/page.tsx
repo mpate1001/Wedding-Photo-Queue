@@ -1,21 +1,131 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import GroupCard from '@/components/GroupCard';
 import type { Group, QueueStatus } from '@/types';
 
 export default function Home() {
+  const router = useRouter();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notifyingGroup, setNotifyingGroup] = useState<number | null>(null);
   const [filterStatus, setFilterStatus] = useState<QueueStatus | 'all'>('all');
   const [testMode, setTestMode] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [selectedGroups, setSelectedGroups] = useState<Set<number>>(new Set());
+  const [bulkNotifying, setBulkNotifying] = useState(false);
 
   useEffect(() => {
-    fetchGroups();
-    checkTestMode();
+    checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (authenticated) {
+      fetchGroups();
+      checkTestMode();
+    }
+  }, [authenticated]);
+
+  const checkAuth = async () => {
+    const token = localStorage.getItem('wedding_auth');
+
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+
+      const data = await response.json();
+
+      if (data.valid) {
+        setAuthenticated(true);
+      } else {
+        localStorage.removeItem('wedding_auth');
+        router.push('/login');
+      }
+    } catch (err) {
+      console.error('Auth check failed:', err);
+      localStorage.removeItem('wedding_auth');
+      router.push('/login');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('wedding_auth');
+    router.push('/login');
+  };
+
+  const handleSelectGroup = (groupNumber: number, selected: boolean) => {
+    setSelectedGroups((prev) => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(groupNumber);
+      } else {
+        newSet.delete(groupNumber);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    setSelectedGroups(new Set(filteredGroups.map((g) => g.groupNumber)));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedGroups(new Set());
+  };
+
+  const handleBulkNotify = async () => {
+    if (selectedGroups.size === 0) {
+      alert('Please select at least one group to notify');
+      return;
+    }
+
+    const confirmed = confirm(`Send notifications to ${selectedGroups.size} selected group(s)?`);
+    if (!confirmed) return;
+
+    setBulkNotifying(true);
+
+    try {
+      const selectedGroupsData = groups.filter((g) => selectedGroups.has(g.groupNumber));
+      const results = [];
+
+      for (const group of selectedGroupsData) {
+        const response = await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            groupNumber: group.groupNumber,
+            members: group.members,
+          }),
+        });
+
+        const result = await response.json();
+        results.push({ group: group.groupNumber, result });
+
+        if (result.success) {
+          handleStatusChange(group.groupNumber, 'notified');
+        }
+      }
+
+      const successCount = results.filter((r) => r.result.success).length;
+      alert(`✅ Bulk notification complete!\n${successCount}/${selectedGroups.size} groups notified successfully`);
+      setSelectedGroups(new Set());
+    } catch (err) {
+      alert('Bulk notification failed. Please try again.');
+      console.error(err);
+    } finally {
+      setBulkNotifying(false);
+    }
+  };
 
   const checkTestMode = async () => {
     try {
@@ -176,11 +286,19 @@ export default function Home() {
           </div>
         )}
 
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Wedding Photo Queue
-          </h1>
-          <p className="text-gray-600">Mahek & Saumya's Wedding</p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              Wedding Photo Queue
+            </h1>
+            <p className="text-gray-600">Mahek & Saumya's Wedding</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+          >
+            🔒 Logout
+          </button>
         </div>
 
         {/* Stats */}
@@ -206,6 +324,32 @@ export default function Home() {
             <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
           </div>
         </div>
+
+        {/* Bulk Actions */}
+        {selectedGroups.size > 0 && (
+          <div className="mb-4 bg-indigo-50 border-2 border-indigo-300 rounded-lg p-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <p className="font-semibold text-indigo-900">
+                  {selectedGroups.size} group{selectedGroups.size !== 1 ? 's' : ''} selected
+                </p>
+                <button
+                  onClick={handleDeselectAll}
+                  className="text-sm text-indigo-700 hover:text-indigo-900 underline"
+                >
+                  Clear selection
+                </button>
+              </div>
+              <button
+                onClick={handleBulkNotify}
+                disabled={bulkNotifying}
+                className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors"
+              >
+                {bulkNotifying ? 'Sending...' : `📲 Notify ${selectedGroups.size} Group${selectedGroups.size !== 1 ? 's' : ''}`}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Filter & Refresh */}
         <div className="flex flex-wrap gap-3 mb-6">
@@ -261,6 +405,12 @@ export default function Home() {
           </button>
           <div className="flex-grow"></div>
           <button
+            onClick={handleSelectAll}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 font-medium transition-colors"
+          >
+            ☑️ Select All ({filteredGroups.length})
+          </button>
+          <button
             onClick={fetchGroups}
             className="px-4 py-2 bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-md hover:bg-indigo-200 font-medium transition-colors"
           >
@@ -277,6 +427,8 @@ export default function Home() {
               onStatusChange={handleStatusChange}
               onNotify={handleNotify}
               isNotifying={notifyingGroup === group.groupNumber}
+              isSelected={selectedGroups.has(group.groupNumber)}
+              onSelect={handleSelectGroup}
             />
           ))}
         </div>
