@@ -1,1 +1,1 @@
-# Wedding-Photo_Queue
+# Wedding Photo Queue
