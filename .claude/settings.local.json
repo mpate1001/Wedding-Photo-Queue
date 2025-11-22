@@ -11,7 +11,9 @@
       "Bash(npm run dev:*)",
       "Bash(git checkout:*)",
       "Bash(git reset:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nBuild Wedding Photo Queue app with notification system\n\nFeatures:\n- Next.js 15 app with TypeScript and Tailwind CSS\n- Google Sheets CSV integration for group data\n- Multi-member group support with auto phone formatting\n- Triple notification system (SMS + WhatsApp + Email via Twilio/SendGrid)\n- Test mode to simulate notifications without using credits\n- Interactive dashboard with filtering, stats, and status management\n- Responsive UI with emoji-enhanced filter buttons\n- Persistent status tracking via localStorage\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
