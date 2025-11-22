@@ -1,184 +1,175 @@
 # Wedding Photo Queue App
 
-A web-based application to manage group photo queuing for Mahek & Saumya's wedding. Wedding planners can track groups, queue them, and send SMS + WhatsApp + Email notifications when it's time for their photo.
+A password-protected web application to manage group photo queuing for Mahek & Saumya's wedding (May 24th, 2026). Event planners can track groups, queue them, and send bulk SMS + WhatsApp + Email notifications when it's time for their photo.
+
+**Live at:** [photos.mikemetsaumone.com](https://photos.mikemetsaumone.com)
 
 ## Features
 
-- Real-time group tracking from Google Sheets
-- Queue management with 4 statuses: Waiting, Queued, Notified, Completed
-- **Triple notification redundancy**: SMS + WhatsApp + Email sent simultaneously
-- Multiple members per group support
-- Automatic US phone number formatting (+1 prefix)
-- Beautiful dashboard with stats and filtering
-- Persistent status tracking using localStorage
-- Mobile-responsive design
+### Core Functionality
+- 🔒 **Password-protected dashboard** - Secure access for event planners
+- 📊 **Real-time group tracking** from Google Sheets
+- 📲 **Triple notification redundancy**: SMS + WhatsApp + Email sent simultaneously
+- 👥 **Multi-member groups**: Multiple people per group number
+- 🔢 **Auto phone formatting**: Adds +1 prefix to US numbers
+- 📱 **Mobile-responsive design**: Works on phones and tablets
+
+### Queue Management
+- **4 status levels**: Waiting → Queued → Notified → Completed
+- **Filter buttons**: Quick access to groups by status
+- **Real-time stats**: Total, waiting, queued, notified, completed counts
+- **Persistent status tracking**: Saves to browser localStorage
+
+### Bulk Operations (NEW!)
+- ☑️ **Checkbox selection**: Select individual groups
+- ✅ **Select All**: Bulk select filtered groups
+- 📲 **Bulk notify**: Send notifications to multiple groups at once
+- 📊 **Success tracking**: See how many notifications succeeded
+
+### Test Mode
+- 🧪 **Simulate notifications**: Test without using credits
+- 💰 **Save money**: No SMS/WhatsApp/Email sent in test mode
+- 📝 **Console logging**: See what would be sent
+- ⚠️ **Visual indicator**: Yellow banner when test mode active
 
 ## Tech Stack
 
 - **Frontend**: Next.js 15 with TypeScript, Tailwind CSS
 - **Hosting**: Vercel (Free tier)
+- **Domain**: Custom domain via Vercel
 - **Data Source**: Google Sheets (published as CSV)
 - **SMS & WhatsApp**: Twilio
 - **Email**: SendGrid (Free tier - 100 emails/day)
+- **Authentication**: Password-based with localStorage session
 
 ## Cost Estimate
 
-- Hosting: **$0** (Vercel free tier)
-- Email: **$0** (SendGrid free tier)
-- SMS: **~$0.0079 per message** (Twilio)
-- WhatsApp: **~$0.005 per message** (Twilio - cheaper than SMS!)
-- **Total for 50 groups with 2 members each: ~$1.30**
+- **Hosting**: $0 (Vercel free tier)
+- **Domain**: Already owned
+- **Email**: $0 (SendGrid free tier - 100/day)
+- **SMS**: ~$0.0079 per message (Twilio)
+- **WhatsApp**: ~$0.005 per message (Twilio - cheaper!)
+- **Phone Number Rental**: ~$1/month (only need for wedding month)
 
-## Setup Instructions
+**Estimated total for 50 groups with 2 members each: ~$2-3**
 
-### 1. Google Sheets Setup
+## Quick Start
 
-Create a spreadsheet with the following columns (header row):
+### Prerequisites
+- Twilio account (SMS + WhatsApp)
+- SendGrid account (Email)
+- Google Sheet with group data
+- Vercel account (hosting)
 
-| Group Number | Name | Phone | Email |
-|--------------|------|-------|-------|
-| 1 | Smith Family | +12345678901 | smith@example.com |
-| 2 | Jones Family | +12345678902 | jones@example.com |
+### Environment Variables
 
-**Publish to web:**
-1. Open your Google Sheet
-2. Go to **File > Share > Publish to web**
-3. Select **Comma-separated values (.csv)** as format
-4. Choose the specific sheet tab
-5. Click **Publish** and copy the URL
-
-### 2. Twilio Setup (SMS)
-
-1. Sign up at [https://www.twilio.com/](https://www.twilio.com/)
-2. Get a phone number (trial or paid)
-3. Copy your Account SID, Auth Token, and Phone Number from the console
-
-### 3. Twilio WhatsApp Setup
-
-**Option A: WhatsApp Sandbox (Testing - Free)**
-1. Go to [https://console.twilio.com/us1/develop/sms/try-it-out/whatsapp-learn](https://console.twilio.com/us1/develop/sms/try-it-out/whatsapp-learn)
-2. Follow instructions to join the sandbox (send "join <code>" to the WhatsApp number)
-3. Use the sandbox number: `+14155238886` as your `TWILIO_WHATSAPP_NUMBER`
-4. Note: Recipients must join the sandbox first by messaging the code
-
-**Option B: WhatsApp Business API (Production - Requires Approval)**
-1. Go to [https://console.twilio.com/us1/develop/sms/senders/whatsapp-senders](https://console.twilio.com/us1/develop/sms/senders/whatsapp-senders)
-2. Submit your business profile for approval (can take 1-3 days)
-3. Once approved, use your approved WhatsApp number
-4. Recipients don't need to join anything
-
-### 4. SendGrid Setup
-
-1. Sign up at [https://sendgrid.com/](https://sendgrid.com/) (free tier)
-2. Verify your sender email address
-3. Create an API key at **Settings > API Keys**
-4. Copy the API key
-
-### 5. Local Development
-
-Clone the repository and install dependencies:
-
-```bash
-npm install
-```
-
-Create a `.env.local` file (copy from `.env.example`):
-
-```bash
-cp .env.example .env.local
-```
-
-Fill in your credentials in `.env.local`:
+Create a `.env.local` file:
 
 ```env
-GOOGLE_SHEET_CSV_URL=https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/pub?output=csv
+# Google Sheets - Published CSV URL
+GOOGLE_SHEET_CSV_URL=your_published_sheet_url
 
-# TEST MODE: Set to 'true' to simulate notifications without sending (recommended for now!)
+# Dashboard Password
+DASHBOARD_PASSWORD=your_secure_password
+
+# Test Mode (true = simulate, false = real sends)
 TEST_MODE=true
 
+# Twilio
 TWILIO_ACCOUNT_SID=your_account_sid
 TWILIO_AUTH_TOKEN=your_auth_token
 TWILIO_PHONE_NUMBER=+1234567890
 TWILIO_WHATSAPP_NUMBER=+14155238886
-SENDGRID_API_KEY=SG.xxxxx
+
+# SendGrid
+SENDGRID_API_KEY=SG.your_api_key
 SENDGRID_FROM_EMAIL=your-verified-email@example.com
 ```
 
-**Important:** Keep `TEST_MODE=true` until you're ready to send real notifications on the wedding day!
-
-Run the development server:
+### Install & Run
 
 ```bash
+npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Visit `http://localhost:3000` and login with your password.
 
-### 6. Deploy to Vercel
+## Google Sheets Format
 
-1. Push your code to GitHub
-2. Go to [https://vercel.com/](https://vercel.com/)
-3. Click **Import Project** and select your repository
-4. Add all environment variables from `.env.local` (including WhatsApp number)
-5. Click **Deploy**
+Your spreadsheet should have these columns (with header row):
 
-Your app will be live at `https://your-project.vercel.app`
+| Group Number | Name | Phone | Email |
+|--------------|------|-------|-------|
+| 1 | John Smith | 2025551234 | john@example.com |
+| 1 | Jane Smith | 2025555678 | jane@example.com |
+| 2 | Bob Jones | 2025559012 | bob@example.com |
 
-## Test Mode
+**Note:** Phone numbers will auto-format with +1 prefix. Multiple rows with same group number = multiple members.
 
-### What is Test Mode?
+**To publish:**
+1. File → Share → Publish to web
+2. Select "Comma-separated values (.csv)"
+3. Choose your sheet tab
+4. Copy the published URL
 
-Test mode allows you to test the entire notification workflow WITHOUT actually sending SMS, WhatsApp, or Email messages. This saves your Twilio/SendGrid credits while you're building and testing.
+## Pre-Wedding Checklist
 
-### How to Use Test Mode
+### 2 Weeks Before (Early May 2026)
+- [ ] Buy Twilio phone number (~$1/month)
+- [ ] Add $20-30 Twilio credits
+- [ ] Update `TWILIO_PHONE_NUMBER` in Vercel
+- [ ] Optional: Apply for WhatsApp Business API approval
 
-**Enabled (Default):**
-```env
-TEST_MODE=true
-```
-- Yellow banner appears at the top of the dashboard
-- Clicking "Notify" simulates sending messages
-- Console logs show what would be sent
-- No credits are used
-- Perfect for testing the UI and workflow
+### 1 Week Before
+- [ ] Set `TEST_MODE=false` in Vercel
+- [ ] Send test notifications to yourself
+- [ ] Verify SMS, WhatsApp, and Email all work
+- [ ] Finalize Google Sheet with all groups
 
-**Disabled (Production):**
-```env
-TEST_MODE=false
-# or remove the TEST_MODE line entirely
-```
-- No test mode banner
-- Clicking "Notify" sends REAL SMS, WhatsApp, and Email
-- Credits are used
-- Only enable this on wedding day!
+### Wedding Day (May 24, 2026)
+- [ ] Give event planners URL and password
+- [ ] Show them bulk notify feature
+- [ ] Keep `TEST_MODE=false`
+- [ ] Monitor notifications as needed
 
-### When to Disable Test Mode
+## Usage Guide
 
-1. **1-2 weeks before wedding**: Buy Twilio phone number
-2. **1 week before wedding**: Test with your own phone number (`TEST_MODE=false`)
-3. **Wedding day**: Keep `TEST_MODE=false` and go live!
+### Login
+1. Visit `photos.mikemetsaumone.com`
+2. Enter dashboard password
+3. Click "Login"
 
-## Usage
+### Individual Notify
+1. Find the group in the list
+2. Change status to "Queued" (optional)
+3. Click "📲 Notify" button
+4. Confirm the alert
+5. Status auto-updates to "Notified"
 
-### Dashboard Features
+### Bulk Notify (Event Planners!)
+1. Filter to "Queued" groups
+2. Click "☑️ Select All" or check individual groups
+3. Click "📲 Notify X Groups" in the blue banner
+4. Confirm the bulk action
+5. Wait for sequential sends to complete
+6. All selected groups marked as "Notified"
 
-1. **Stats Dashboard**: Shows total groups and status breakdown
-2. **Filter Groups**: Filter by status (All, Waiting, Queued, Notified, Completed)
-3. **Refresh**: Fetch latest data from Google Sheets
-4. **Status Dropdown**: Manually update group status
-5. **Notify Button**: Send SMS + WhatsApp + Email to ALL group members
+### Filter Groups
+- Click colored buttons to filter by status
+- **📋 All Groups**: Show everything
+- **⏳ Waiting**: Not yet queued
+- **📝 Queued**: Ready to notify
+- **📲 Notified**: Already sent
+- **✅ Completed**: Photo taken
 
-### Notification Flow
+### Refresh Data
+- Click "🔄 Refresh" to pull latest from Google Sheets
+- Use this if you updated the sheet
 
-1. Set group status to "Queued" when ready
-2. Click "Notify" button to send notifications to all members
-3. App sends SMS, WhatsApp, AND Email simultaneously (triple redundancy!)
-4. Status automatically updates to "Notified"
-5. Mark as "Completed" after photo is taken
+## Notification Messages
 
-### Notification Messages
-
-All three channels (SMS, WhatsApp, Email) receive the same personalized message:
+Each member receives a personalized message with their name:
 
 **SMS & WhatsApp:**
 ```
@@ -200,47 +191,83 @@ Thank you!
 - Wedding Planning Team
 ```
 
-## Troubleshooting
-
-### Groups not loading
-- Check that `GOOGLE_SHEET_CSV_URL` is correct
-- Ensure the sheet is published to web as CSV
-- Verify the sheet has the correct column structure
-
-### Notifications not sending
-- Check Twilio credentials and phone number format (+1XXXXXXXXXX)
-- Verify SendGrid API key and sender email is verified
-- Check browser console and server logs for errors
-
-### Status not persisting
-- Status is saved in browser localStorage
-- Clearing browser data will reset statuses
-- Each browser/device maintains its own status independently
-
 ## File Structure
 
 ```
 ├── app/
 │   ├── api/
-│   │   ├── groups/route.ts      # Fetch groups from Google Sheets
-│   │   └── notify/route.ts      # Send SMS + Email notifications
-│   └── page.tsx                 # Main dashboard component
+│   │   ├── auth/
+│   │   │   ├── login/route.ts       # Login authentication
+│   │   │   └── verify/route.ts      # Session verification
+│   │   ├── groups/route.ts          # Fetch groups from Google Sheets
+│   │   ├── notify/route.ts          # Send SMS + WhatsApp + Email
+│   │   └── test-mode/route.ts       # Check if test mode enabled
+│   ├── login/page.tsx               # Login page
+│   └── page.tsx                     # Main dashboard
 ├── components/
-│   └── GroupCard.tsx            # Individual group card component
+│   └── GroupCard.tsx                # Group card with selection
 ├── types/
-│   └── index.ts                 # TypeScript type definitions
-└── .env.example                 # Environment variables template
+│   └── index.ts                     # TypeScript definitions
+└── .env.local                       # Environment variables (not committed)
 ```
+
+## Troubleshooting
+
+### Can't Login
+- Check password is correct
+- Try clearing browser cache/localStorage
+- Verify `DASHBOARD_PASSWORD` is set in Vercel
+
+### Groups Not Loading
+- Verify `GOOGLE_SHEET_CSV_URL` is correct
+- Ensure sheet is published to web as CSV
+- Check sheet has correct column names
+- Try clicking "🔄 Refresh"
+
+### Notifications Not Sending
+- Verify `TEST_MODE=false` in Vercel
+- Check Twilio credentials are correct
+- Verify SendGrid API key and sender email
+- Check phone numbers have +1 prefix
+- Look at browser console for errors
+
+### Test Mode Won't Disable
+- Check Vercel environment variable `TEST_MODE`
+- Must be set to `false` or removed entirely
+- Redeploy after changing env variables
 
 ## Development
 
-Built with Next.js App Router and TypeScript. Key dependencies:
+Built with:
+- Next.js 15 App Router
+- TypeScript
+- Tailwind CSS
+- Twilio SDK
+- SendGrid SDK
 
-- `next` - React framework
-- `twilio` - SMS notifications
-- `@sendgrid/mail` - Email notifications
-- `tailwindcss` - Styling
+Key dependencies:
+```json
+{
+  "next": "^16.0.3",
+  "react": "^19.0.0",
+  "twilio": "^5.x",
+  "@sendgrid/mail": "^8.x",
+  "tailwindcss": "^4.x"
+}
+```
+
+## Security
+
+- ✅ Password-protected dashboard
+- ✅ Session-based authentication
+- ✅ API keys never exposed to frontend
+- ✅ `.env.local` excluded from git
+- ✅ All secrets stored in Vercel environment variables
 
 ## License
 
-MIT
+MIT - Built for Mahek & Saumya's Wedding, May 24th, 2026
+
+---
+
+**Questions?** Contact the developer or check Vercel logs for errors.
