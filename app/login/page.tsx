@@ -46,6 +46,7 @@ export default function LoginPage() {
               Wedding Photo Queue
             </h1>
             <p className="text-gray-600">Mahek & Saumya's Wedding</p>
+            <p className="text-gray-600">May 24th, 2026</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
