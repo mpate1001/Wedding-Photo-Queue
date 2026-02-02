@@ -70,7 +70,7 @@ Create a `.env.local` file:
 GOOGLE_SHEET_CSV_URL=your_published_sheet_url
 
 # Dashboard Password
-DASHBOARD_PASSWORD=your_secure_password
+DASHBOARD_PASSWORD=MikeMetSaumOne!
 
 # Test Mode (true = simulate, false = real sends)
 TEST_MODE=true
