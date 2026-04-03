@@ -29,7 +29,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The existing 444-line page.tsx state logic has been extracted into a dedicated Zustand store that survives page refresh
   4. Group status records include notifiedAt, lastResendAt, resendCount, and confirmedAt fields persisted in localStorage
   5. Queue ordering is stored in a separate queueOrder array independent of group numbers
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Install packages (zustand, @tanstack/react-query, sonner, date-fns) and extend TypeScript type definitions
+- [ ] 01-02-PLAN.md — Create Zustand store with persist middleware, all actions, and localStorage migration
+- [ ] 01-03-PLAN.md — Fix email bug, add server-side dedup cooldown, verify real notification delivery
+- [ ] 01-04-PLAN.md — Wire page.tsx to Zustand store, update GroupCard for extended status model, mount providers
 
 ### Phase 2: Queue Mechanics
 **Goal**: The coordinator can manage no-shows automatically and confirm arrivals without manual intervention
@@ -74,7 +80,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 0/4 | Not started | - |
 | 2. Queue Mechanics | 0/TBD | Not started | - |
 | 3. UI/UX Overhaul | 0/TBD | Not started | - |
 | 4. Polish | 0/TBD | Not started | - |
