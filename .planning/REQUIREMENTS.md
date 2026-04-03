@@ -84,39 +84,39 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUN-01 | TBD | Pending |
-| FOUN-02 | TBD | Pending |
-| FOUN-03 | TBD | Pending |
-| FOUN-04 | TBD | Pending |
-| NOTF-01 | TBD | Pending |
-| NOTF-02 | TBD | Pending |
-| NOTF-03 | TBD | Pending |
-| NOTF-04 | TBD | Pending |
-| NOTF-05 | TBD | Pending |
-| NOTF-06 | TBD | Pending |
-| NOTF-07 | TBD | Pending |
-| NOTF-08 | TBD | Pending |
-| QUEUE-01 | TBD | Pending |
-| QUEUE-02 | TBD | Pending |
-| QUEUE-03 | TBD | Pending |
-| QUEUE-04 | TBD | Pending |
-| QUEUE-05 | TBD | Pending |
-| QUEUE-06 | TBD | Pending |
-| QUEUE-07 | TBD | Pending |
-| QUEUE-08 | TBD | Pending |
-| UI-01 | TBD | Pending |
-| UI-02 | TBD | Pending |
-| UI-03 | TBD | Pending |
-| UI-04 | TBD | Pending |
-| UI-05 | TBD | Pending |
-| UI-06 | TBD | Pending |
-| UI-07 | TBD | Pending |
+| FOUN-01 | Phase 1 | Pending |
+| FOUN-02 | Phase 1 | Pending |
+| FOUN-03 | Phase 1 | Pending |
+| FOUN-04 | Phase 1 | Pending |
+| NOTF-01 | Phase 1 | Pending |
+| NOTF-02 | Phase 1 | Pending |
+| NOTF-03 | Phase 1 | Pending |
+| NOTF-05 | Phase 1 | Pending |
+| NOTF-06 | Phase 2 | Pending |
+| NOTF-07 | Phase 2 | Pending |
+| NOTF-08 | Phase 2 | Pending |
+| QUEUE-02 | Phase 2 | Pending |
+| QUEUE-03 | Phase 2 | Pending |
+| QUEUE-04 | Phase 2 | Pending |
+| QUEUE-05 | Phase 2 | Pending |
+| NOTF-04 | Phase 3 | Pending |
+| QUEUE-01 | Phase 3 | Pending |
+| QUEUE-07 | Phase 3 | Pending |
+| UI-01 | Phase 3 | Pending |
+| UI-02 | Phase 3 | Pending |
+| UI-03 | Phase 3 | Pending |
+| UI-04 | Phase 3 | Pending |
+| UI-05 | Phase 3 | Pending |
+| UI-06 | Phase 3 | Pending |
+| UI-07 | Phase 3 | Pending |
+| QUEUE-06 | Phase 4 | Pending |
+| QUEUE-08 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 27 total
-- Mapped to phases: 0
-- Unmapped: 27 ⚠️
+- Mapped to phases: 27
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-03*
-*Last updated: 2026-04-03 after initial definition*
+*Last updated: 2026-04-03 after roadmap creation — all 27 v1 requirements mapped*
