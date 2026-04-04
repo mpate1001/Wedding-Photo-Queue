@@ -41,9 +41,9 @@ Requirements for the UI/UX overhaul + feature milestone. Each maps to roadmap ph
 
 ### Foundation
 
-- [ ] **FOUN-01**: Extract state management from 444-line page.tsx into dedicated hooks/store
+- [x] **FOUN-01**: Extract state management from 444-line page.tsx into dedicated hooks/store
 - [x] **FOUN-02**: Status model extended: waiting → queued → notified → arrived → completed
-- [ ] **FOUN-03**: Queue ordering stored separately from group numbers (queueOrder array)
+- [x] **FOUN-03**: Queue ordering stored separately from group numbers (queueOrder array)
 - [x] **FOUN-04**: Timestamp tracking on notification events (notifiedAt, lastResendAt, resendCount)
 
 ## v2 Requirements
@@ -84,9 +84,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUN-01 | Phase 1 | Pending |
+| FOUN-01 | Phase 1 | Complete |
 | FOUN-02 | Phase 1 | Complete |
-| FOUN-03 | Phase 1 | Pending |
+| FOUN-03 | Phase 1 | Complete |
 | FOUN-04 | Phase 1 | Complete |
 | NOTF-01 | Phase 1 | Complete |
 | NOTF-02 | Phase 1 | Complete |
