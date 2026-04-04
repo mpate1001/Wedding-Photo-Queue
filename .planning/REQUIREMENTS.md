@@ -9,11 +9,11 @@ Requirements for the UI/UX overhaul + feature milestone. Each maps to roadmap ph
 
 ### Notifications
 
-- [ ] **NOTF-01**: Real SMS notifications deliver to guest phones via Twilio
-- [ ] **NOTF-02**: Real WhatsApp notifications deliver to guest phones via Twilio
-- [ ] **NOTF-03**: Real Email notifications deliver to guest inboxes via SendGrid (fix existing email bug)
+- [x] **NOTF-01**: Real SMS notifications deliver to guest phones via Twilio
+- [x] **NOTF-02**: Real WhatsApp notifications deliver to guest phones via Twilio
+- [x] **NOTF-03**: Real Email notifications deliver to guest inboxes via SendGrid (fix existing email bug)
 - [ ] **NOTF-04**: Per-channel delivery status displayed on each group card (SMS ✓, WhatsApp ✗, Email ✓)
-- [ ] **NOTF-05**: Duplicate notification prevention — tapping notify twice does not send duplicate messages
+- [x] **NOTF-05**: Duplicate notification prevention — tapping notify twice does not send duplicate messages
 - [ ] **NOTF-06**: Auto-resend notifications every few minutes to groups that were notified but haven't arrived
 - [ ] **NOTF-07**: Visible countdown timer on notified group cards showing time until next auto-resend
 - [ ] **NOTF-08**: Actionable error messages when a notification channel fails (which channel, which group)
@@ -88,10 +88,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUN-02 | Phase 1 | Complete |
 | FOUN-03 | Phase 1 | Pending |
 | FOUN-04 | Phase 1 | Complete |
-| NOTF-01 | Phase 1 | Pending |
-| NOTF-02 | Phase 1 | Pending |
-| NOTF-03 | Phase 1 | Pending |
-| NOTF-05 | Phase 1 | Pending |
+| NOTF-01 | Phase 1 | Complete |
+| NOTF-02 | Phase 1 | Complete |
+| NOTF-03 | Phase 1 | Complete |
+| NOTF-05 | Phase 1 | Complete |
 | NOTF-06 | Phase 2 | Pending |
 | NOTF-07 | Phase 2 | Pending |
 | NOTF-08 | Phase 2 | Pending |
