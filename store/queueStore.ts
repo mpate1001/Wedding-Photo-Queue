@@ -28,7 +28,7 @@ export const useQueueStore = create<QueueStore>()(
           const existing = state.statuses[groupNumber] ?? { status: 'waiting' };
           const now = Date.now();
 
-          let updates: Partial<GroupStateRecord> = { status };
+          const updates: Partial<GroupStateRecord> = { status };
 
           if (status === 'notified') {
             updates.notifiedAt = existing.notifiedAt ?? now;  // Write once — never overwrite
