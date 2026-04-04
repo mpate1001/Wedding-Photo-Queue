@@ -8,6 +8,18 @@ export async function POST(request: NextRequest) {
     const body: NotificationRequest = await request.json();
     const { groupNumber, members } = body;
 
+    // Dedup guard: reject if last notification was sent within cooldown window (per D-10, D-11)
+    const COOLDOWN_MS = 60_000; // 60 seconds — Claude's discretion per D-11
+    if (body.lastNotifiedAt && Date.now() - body.lastNotifiedAt < COOLDOWN_MS) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Notification sent too recently. Wait ${Math.ceil((COOLDOWN_MS - (Date.now() - body.lastNotifiedAt)) / 1000)} seconds before resending.`,
+        },
+        { status: 429 }
+      );
+    }
+
     // Validate required fields
     if (!members || members.length === 0) {
       return NextResponse.json(
@@ -117,7 +129,7 @@ export async function POST(request: NextRequest) {
       const anySuccess =
         memberResult.smsStatus !== 'failed' ||
         memberResult.whatsappStatus !== 'failed' ||
-        memberResult.emailStatus !== 'sent';
+        memberResult.emailStatus === 'sent';  // Fixed: was !== 'sent' (D-12)
 
       if (!anySuccess) {
         results.success = false;
