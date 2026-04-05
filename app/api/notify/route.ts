@@ -1,6 +1,7 @@
+// app/api/notify/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import twilio from 'twilio';
-import sgMail from '@sendgrid/mail';
+import nodemailer from 'nodemailer';
+import { getWhatsAppClient, getWhatsAppStatus } from '@/lib/whatsapp-session';
 import type { NotificationRequest, NotificationResponse } from '@/types';
 
 export async function POST(request: NextRequest) {
@@ -8,8 +9,8 @@ export async function POST(request: NextRequest) {
     const body: NotificationRequest = await request.json();
     const { groupNumber, members } = body;
 
-    // Dedup guard: reject if last notification was sent within cooldown window (per D-10, D-11)
-    const COOLDOWN_MS = 60_000; // 60 seconds — Claude's discretion per D-11
+    // Dedup guard: reject if last notification was sent within cooldown window (per D-15, D-16)
+    const COOLDOWN_MS = 60_000; // 60 seconds — Claude's discretion per D-16
     if (body.lastNotifiedAt && Date.now() - body.lastNotifiedAt < COOLDOWN_MS) {
       return NextResponse.json(
         {
@@ -20,7 +21,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate required fields
     if (!members || members.length === 0) {
       return NextResponse.json(
         { success: false, message: 'No group members provided' },
@@ -28,89 +28,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if in test mode
     const isTestMode = process.env.TEST_MODE === 'true';
 
-    // Initialize services (only if not in test mode)
-    let twilioClient;
-    if (!isTestMode) {
-      twilioClient = twilio(
-        process.env.TWILIO_ACCOUNT_SID,
-        process.env.TWILIO_AUTH_TOKEN
-      );
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
-    }
-
-    const results: NotificationResponse = {
+    const response: NotificationResponse = {
       success: true,
       message: isTestMode
-        ? '🧪 TEST MODE: Notifications simulated (no credits used)'
+        ? 'TEST MODE: Notifications simulated (no real sends)'
         : 'Notifications sent successfully',
+      whatsappGroupStatus: 'pending',
       results: [],
     };
 
-    // Send notifications to each member
-    for (const member of members) {
-      const memberResult = {
-        member: member.name,
-        smsStatus: 'pending' as string,
-        whatsappStatus: 'pending' as string,
-        emailStatus: 'pending' as string,
-      };
+    // ── Email: individual send per member ────────────────────────────────────
+    if (isTestMode) {
+      for (const member of members) {
+        console.log(`[TEST] Would email ${member.email} — Group ${groupNumber}: ${member.name}`);
+        response.results!.push({ member: member.name, emailStatus: 'simulated-success' });
+      }
+    } else {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_APP_PASSWORD,
+        },
+      });
 
-      const messageText = `Hi ${member.name}! Time for your group photo with Mahek & Saumya! Please head to the Mandap now. 📸`;
-
-      if (isTestMode) {
-        // TEST MODE: Simulate notifications without actually sending
-        console.log('🧪 TEST MODE - Would send SMS to:', member.phone);
-        console.log('🧪 TEST MODE - Would send WhatsApp to:', member.phone);
-        console.log('🧪 TEST MODE - Would send Email to:', member.email);
-        console.log('🧪 Message:', messageText);
-
-        // Simulate successful delivery
-        memberResult.smsStatus = 'simulated-success';
-        memberResult.whatsappStatus = 'simulated-success';
-        memberResult.emailStatus = 'simulated-success';
-      } else {
-        // PRODUCTION MODE: Actually send notifications
-        // Send SMS
+      for (const member of members) {
         try {
-          const smsMessage = await twilioClient!.messages.create({
-            body: messageText,
-            from: process.env.TWILIO_PHONE_NUMBER,
-            to: member.phone,
-          });
-          memberResult.smsStatus = smsMessage.status;
-        } catch (smsError) {
-          console.error(`SMS Error for ${member.name}:`, smsError);
-          memberResult.smsStatus = 'failed';
-        }
-
-        // Send WhatsApp
-        try {
-          const whatsappMessage = await twilioClient!.messages.create({
-            body: messageText,
-            from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
-            to: `whatsapp:${member.phone}`,
-          });
-          memberResult.whatsappStatus = whatsappMessage.status;
-        } catch (whatsappError) {
-          console.error(`WhatsApp Error for ${member.name}:`, whatsappError);
-          memberResult.whatsappStatus = 'failed';
-        }
-
-        // Send Email
-        try {
-          await sgMail.send({
+          await transporter.sendMail({
+            from: `"Wedding Photo Queue" <${process.env.GMAIL_USER}>`,
             to: member.email,
-            from: process.env.SENDGRID_FROM_EMAIL || '',
-            subject: '📸 Time for Your Group Photo!',
+            subject: 'Time for Your Group Photo!',
             text: `Hi ${member.name}!\n\nIt's time for your group photo with Mahek & Saumya!\n\nPlease head to the Mandap now.\n\nThank you!\n- Wedding Planning Team`,
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #2c3e50;">📸 Time for Your Group Photo!</h2>
+                <h2 style="color: #2c3e50;">Time for Your Group Photo!</h2>
                 <p style="font-size: 16px;">Hi ${member.name}!</p>
-                <p style="font-size: 16px;">It's time for your group photo with <strong>Mahek & Saumya</strong>!</p>
+                <p style="font-size: 16px;">It's time for your group photo with <strong>Mahek &amp; Saumya</strong>!</p>
                 <p style="font-size: 16px; background-color: #f8f9fa; padding: 15px; border-left: 4px solid #4a90e2;">
                   <strong>Please head to the Mandap now.</strong>
                 </p>
@@ -118,40 +73,60 @@ export async function POST(request: NextRequest) {
               </div>
             `,
           });
-          memberResult.emailStatus = 'sent';
+          response.results!.push({ member: member.name, emailStatus: 'sent' });
         } catch (emailError) {
-          console.error(`Email Error for ${member.name}:`, emailError);
-          memberResult.emailStatus = 'failed';
+          console.error(`[Email] Error for ${member.name}:`, emailError);
+          response.results!.push({ member: member.name, emailStatus: 'failed' });
         }
       }
-
-      // Consider success if at least one notification method succeeded
-      const anySuccess =
-        memberResult.smsStatus !== 'failed' ||
-        memberResult.whatsappStatus !== 'failed' ||
-        memberResult.emailStatus === 'sent';  // Fixed: was !== 'sent' (D-12)
-
-      if (!anySuccess) {
-        results.success = false;
-      }
-
-      results.results!.push(memberResult);
     }
 
-    if (!results.success) {
-      results.message = 'Some notifications failed to send';
+    // ── WhatsApp: one group post per notification call (per D-12) ────────────
+    const groupNames = members.map((m) => m.name).join(', ');
+    const whatsappMessage = `Group ${groupNumber} — ${groupNames}, you're up! Please head to the Mandap now for your group photo. Thank you!`;
+
+    if (isTestMode) {
+      console.log(`[TEST] Would post to WhatsApp group: "${whatsappMessage}"`);
+      response.whatsappGroupStatus = 'simulated-success';
     } else {
-      results.message = `Notifications sent to ${members.length} member(s)`;
+      const whatsappGroupId = process.env.WHATSAPP_GROUP_ID;
+      if (!whatsappGroupId) {
+        console.warn('[WhatsApp] WHATSAPP_GROUP_ID not set — skipping group post');
+        response.whatsappGroupStatus = 'skipped';
+      } else {
+        const { status } = getWhatsAppStatus();
+        if (status !== 'ready') {
+          console.warn(`[WhatsApp] Client not ready (status: ${status}) — skipping group post`);
+          response.whatsappGroupStatus = 'skipped';
+        } else {
+          try {
+            const client = getWhatsAppClient();
+            await client.sendMessage(whatsappGroupId, whatsappMessage);
+            response.whatsappGroupStatus = 'sent';
+          } catch (whatsappError) {
+            console.error('[WhatsApp] Group post error:', whatsappError);
+            response.whatsappGroupStatus = 'failed';
+          }
+        }
+      }
     }
 
-    return NextResponse.json(results);
+    // Determine overall success: email must succeed for at least one member
+    const anyEmailSent = response.results!.some(
+      (r) => r.emailStatus === 'sent' || r.emailStatus === 'simulated-success'
+    );
+    if (!anyEmailSent) {
+      response.success = false;
+      response.message = 'All email sends failed';
+    } else {
+      response.message = `Emails sent to ${response.results!.filter((r) => r.emailStatus === 'sent' || r.emailStatus === 'simulated-success').length}/${members.length} member(s)`;
+    }
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Notification error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to send notifications',
-      },
+      { success: false, message: 'Failed to send notifications' },
       { status: 500 }
     );
   }

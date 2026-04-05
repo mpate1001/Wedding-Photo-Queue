@@ -34,10 +34,9 @@ export interface NotificationRequest {
 export interface NotificationResponse {
   success: boolean;
   message: string;
+  whatsappGroupStatus?: string;  // 'sent' | 'failed' | 'skipped' | 'simulated-success' — one per call
   results?: {
     member: string;
-    smsStatus?: string;
-    whatsappStatus?: string;
-    emailStatus?: string;
+    emailStatus: string;         // 'sent' | 'failed' | 'simulated-success'
   }[];
 }
