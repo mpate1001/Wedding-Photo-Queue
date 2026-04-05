@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-foundation-01-02-PLAN.md
-last_updated: "2026-04-04T11:51:56.814Z"
+stopped_at: "Checkpoint 01-03 Task 3: WhatsApp QR scan + Gmail App Password setup"
+last_updated: "2026-04-05T15:15:20.261Z"
 last_activity: 2026-04-04
 progress:
   total_phases: 4
@@ -71,6 +71,8 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: emailStatus === 'sent' is the correct check in anySuccess — was erroneously !== 'sent' (D-12 fix)
 - [Phase 01-foundation]: 60-second dedup cooldown guard added server-side (D-10, D-11) — rejects early before Twilio/SendGrid calls
 - [Phase 01-foundation]: Single Zustand store with persist middleware, notifiedAt write-once guard, and queueOrder as number[] for re-queue-to-back pattern
+- [Phase 01-foundation]: Replaced Twilio/SendGrid with Nodemailer+Gmail SMTP and whatsapp-web.js group posting — zero cost notification stack (D-07 through D-14)
+- [Phase 01-foundation]: WhatsApp singleton stored in globalThis with LocalAuth session to .wwebjs_auth/ — coordinator scans QR once before wedding day
 
 ### Pending Todos
 
@@ -85,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T11:51:56.812Z
-Stopped at: Completed 01-foundation-01-02-PLAN.md
+Last session: 2026-04-05T15:15:13.476Z
+Stopped at: Checkpoint 01-03 Task 3: WhatsApp QR scan + Gmail App Password setup
 Resume file: None
