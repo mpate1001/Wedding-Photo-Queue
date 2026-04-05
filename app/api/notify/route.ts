@@ -4,13 +4,56 @@ import nodemailer from 'nodemailer';
 import { getWhatsAppClient, getWhatsAppStatus } from '@/lib/whatsapp-session';
 import type { NotificationRequest, NotificationResponse } from '@/types';
 
+// Send individual WhatsApp message via Meta Cloud API
+async function sendWhatsAppCloudMessage(phone: string, messageText: string): Promise<'sent' | 'failed' | 'skipped'> {
+  const token = process.env.WHATSAPP_CLOUD_TOKEN;
+  const phoneNumberId = process.env.WHATSAPP_CLOUD_PHONE_ID;
+
+  if (!token || !phoneNumberId) {
+    return 'skipped';
+  }
+
+  // Strip non-digits and remove leading +
+  const cleanPhone = phone.replace(/\D/g, '');
+
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: cleanPhone,
+          type: 'text',
+          text: { body: messageText },
+        }),
+      }
+    );
+
+    if (res.ok) {
+      return 'sent';
+    } else {
+      const error = await res.json();
+      console.error(`[WhatsApp Cloud] Error for ${phone}:`, error);
+      return 'failed';
+    }
+  } catch (err) {
+    console.error(`[WhatsApp Cloud] Network error for ${phone}:`, err);
+    return 'failed';
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: NotificationRequest = await request.json();
     const { groupNumber, members } = body;
 
-    // Dedup guard: reject if last notification was sent within cooldown window (per D-15, D-16)
-    const COOLDOWN_MS = 60_000; // 60 seconds — Claude's discretion per D-16
+    // Dedup guard: reject if last notification was sent within cooldown window
+    const COOLDOWN_MS = 60_000; // 60 seconds
     if (body.lastNotifiedAt && Date.now() - body.lastNotifiedAt < COOLDOWN_MS) {
       return NextResponse.json(
         {
@@ -39,11 +82,16 @@ export async function POST(request: NextRequest) {
       results: [],
     };
 
-    // ── Email: individual send per member ────────────────────────────────────
+    // ── Per-member: Email (Gmail SMTP) + Individual WhatsApp (Cloud API) ─────
     if (isTestMode) {
       for (const member of members) {
         console.log(`[TEST] Would email ${member.email} — Group ${groupNumber}: ${member.name}`);
-        response.results!.push({ member: member.name, emailStatus: 'simulated-success' });
+        console.log(`[TEST] Would WhatsApp ${member.phone} — Group ${groupNumber}: ${member.name}`);
+        response.results!.push({
+          member: member.name,
+          emailStatus: 'simulated-success',
+          whatsappStatus: 'simulated-success',
+        });
       }
     } else {
       const transporter = nodemailer.createTransport({
@@ -54,7 +102,14 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      const messageText = (name: string) =>
+        `Hi ${name}! It's time for your group photo with Mahek & Saumya! Please head to the Mandap now.`;
+
       for (const member of members) {
+        let emailStatus = 'failed';
+        let whatsappStatus = 'skipped';
+
+        // Send email
         try {
           await transporter.sendMail({
             from: `"Wedding Photo Queue" <${process.env.GMAIL_USER}>`,
@@ -73,20 +128,33 @@ export async function POST(request: NextRequest) {
               </div>
             `,
           });
-          response.results!.push({ member: member.name, emailStatus: 'sent' });
+          emailStatus = 'sent';
         } catch (emailError) {
           console.error(`[Email] Error for ${member.name}:`, emailError);
-          response.results!.push({ member: member.name, emailStatus: 'failed' });
         }
+
+        // Send individual WhatsApp via Cloud API
+        if (member.phone) {
+          whatsappStatus = await sendWhatsAppCloudMessage(
+            member.phone,
+            messageText(member.name)
+          );
+        }
+
+        response.results!.push({
+          member: member.name,
+          emailStatus,
+          whatsappStatus,
+        });
       }
     }
 
-    // ── WhatsApp: one group post per notification call (per D-12) ────────────
+    // ── WhatsApp Group Post (whatsapp-web.js) — best-effort ──────────────────
     const groupNames = members.map((m) => m.name).join(', ');
-    const whatsappMessage = `Group ${groupNumber} — ${groupNames}, you're up! Please head to the Mandap now for your group photo. Thank you!`;
+    const whatsappGroupMessage = `Group ${groupNumber} — ${groupNames}, you're up! Please head to the Mandap now for your group photo. Thank you!`;
 
     if (isTestMode) {
-      console.log(`[TEST] Would post to WhatsApp group: "${whatsappMessage}"`);
+      console.log(`[TEST] Would post to WhatsApp group: "${whatsappGroupMessage}"`);
       response.whatsappGroupStatus = 'simulated-success';
     } else {
       const whatsappGroupId = process.env.WHATSAPP_GROUP_ID;
@@ -101,7 +169,7 @@ export async function POST(request: NextRequest) {
         } else {
           try {
             const client = getWhatsAppClient();
-            await client.sendMessage(whatsappGroupId, whatsappMessage);
+            await client.sendMessage(whatsappGroupId, whatsappGroupMessage);
             response.whatsappGroupStatus = 'sent';
           } catch (whatsappError) {
             console.error('[WhatsApp] Group post error:', whatsappError);
@@ -111,15 +179,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Determine overall success: email must succeed for at least one member
-    const anyEmailSent = response.results!.some(
-      (r) => r.emailStatus === 'sent' || r.emailStatus === 'simulated-success'
+    // Determine overall success: at least one channel must succeed per member
+    const anySuccess = response.results!.some(
+      (r) => r.emailStatus === 'sent' || r.emailStatus === 'simulated-success' ||
+             r.whatsappStatus === 'sent' || r.whatsappStatus === 'simulated-success'
     );
-    if (!anyEmailSent) {
+    if (!anySuccess) {
       response.success = false;
-      response.message = 'All email sends failed';
+      response.message = 'All notifications failed';
     } else {
-      response.message = `Emails sent to ${response.results!.filter((r) => r.emailStatus === 'sent' || r.emailStatus === 'simulated-success').length}/${members.length} member(s)`;
+      const emailCount = response.results!.filter((r) => r.emailStatus === 'sent' || r.emailStatus === 'simulated-success').length;
+      const waCount = response.results!.filter((r) => r.whatsappStatus === 'sent' || r.whatsappStatus === 'simulated-success').length;
+      response.message = `Sent to ${members.length} member(s): ${emailCount} emails, ${waCount} WhatsApp messages`;
     }
 
     return NextResponse.json(response);

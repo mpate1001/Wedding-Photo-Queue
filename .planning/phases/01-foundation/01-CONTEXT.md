@@ -25,16 +25,18 @@ Extend the data schema, wire Zustand state management, replace notification prov
 - **D-06:** When a group is re-queued to the back, status resets to 'queued'
 
 ### Notification Architecture (UPDATED 2026-04-05)
-- **D-07:** DROP Twilio entirely (no SMS, no individual WhatsApp)
+- **D-07:** DROP Twilio entirely (no SMS)
 - **D-08:** DROP SendGrid entirely
 - **D-09:** Email via Nodemailer + Gmail SMTP (saum.mahek26@gmail.com) — individual emails per member, free
-- **D-10:** WhatsApp via whatsapp-web.js — auto-post to a dedicated read-only WhatsApp group, free
-- **D-11:** WhatsApp group is read-only (only the bot/coordinator posts). Guests join this group before the wedding.
-- **D-12:** Two types of WhatsApp group messages:
-  - Pre-event: Full photo schedule posted to the group
-  - During event: Auto-post as each group is queued ("Group 5 — Patel Family, you're up!")
-- **D-13:** whatsapp-web.js connects via QR code scan before the wedding. Coordinator scans once, session persists.
-- **D-14:** Total notification cost: $0
+- **D-10:** Individual WhatsApp messages via WhatsApp Cloud API (Meta) — free tier 1,000 conversations/month, runs on Vercel
+- **D-11:** WhatsApp group post via whatsapp-web.js — auto-post to dedicated read-only group, runs from laptop, best-effort/graceful fallback
+- **D-12:** Three notification channels per queued group:
+  1. Individual emails to each member (Gmail SMTP, always)
+  2. Individual WhatsApp messages to each member (Cloud API, always)
+  3. Group post to WhatsApp group (whatsapp-web.js, best-effort)
+- **D-13:** whatsapp-web.js connects via QR code scan before the wedding. Session persists via LocalAuth.
+- **D-14:** Total notification cost: $0 (all free tiers)
+- **D-14b:** If laptop is down, individual WhatsApp + email still work from Vercel. Group post is a bonus.
 
 ### Duplicate Send Prevention
 - **D-15:** Client + server dedup: UI disables button after tap + server checks lastResendAt timestamp
