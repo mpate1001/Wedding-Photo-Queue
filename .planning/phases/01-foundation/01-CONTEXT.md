@@ -1,12 +1,13 @@
 # Phase 1: Foundation - Context
 
 **Gathered:** 2026-04-03
-**Status:** Ready for planning
+**Updated:** 2026-04-05
+**Status:** Ready for planning (replanning 01-03)
 
 <domain>
 ## Phase Boundary
 
-Extend the data schema, wire Zustand state management, fix the email bug, and verify real notifications (SMS, WhatsApp, Email) deliver to phones. This phase locks the data model and state architecture that all subsequent phases build on.
+Extend the data schema, wire Zustand state management, replace notification providers (Twilio/SendGrid → Nodemailer+Gmail + whatsapp-web.js), and verify real notifications deliver. This phase locks the data model and state architecture that all subsequent phases build on.
 
 </domain>
 
@@ -14,36 +15,46 @@ Extend the data schema, wire Zustand state management, fix the email bug, and ve
 ## Implementation Decisions
 
 ### State Management Migration
-- **D-01:** Use Zustand with persist middleware to replace all 9 useState hooks in page.tsx (lines 10-18) and localStorage calls
-- **D-02:** Single store (not split by concern) — one store for groups, queue state, and notification status. Simple enough for single-coordinator app.
-- **D-03:** Queue ordering stored as a simple array of group numbers `[5, 12, 3, 8]` — position is index, re-queue = move to end
+- **D-01:** Use Zustand with persist middleware to replace all 9 useState hooks in page.tsx
+- **D-02:** Single store (not split by concern) — one store for groups, queue state, and notification status
+- **D-03:** Queue ordering stored as a simple array of group numbers `[5, 12, 3, 8]`
 
 ### Status Model Extension
 - **D-04:** Add 'arrived' state: `waiting → queued → notified → arrived → completed`
-- **D-05:** Track all recommended timestamp fields: `notifiedAt`, `lastResendAt`, `resendCount`, `confirmedAt`
-- **D-06:** When a group is re-queued to the back, their status resets to 'queued' (treated as freshly queued, will get new notification)
+- **D-05:** Track all timestamp fields: `notifiedAt`, `lastResendAt`, `resendCount`, `confirmedAt`
+- **D-06:** When a group is re-queued to the back, status resets to 'queued'
 
-### Notification Testing Strategy
-- **D-07:** Test with Twilio test credentials first (validate API flow), then test with real phone number (validate delivery)
-- **D-08:** WhatsApp sandbox needs setup — Twilio WhatsApp sandbox not yet configured
-- **D-09:** SendGrid sender verification needed — saum.mahek26@gmail.com not yet verified as sender identity
+### Notification Architecture (UPDATED 2026-04-05)
+- **D-07:** DROP Twilio entirely (no SMS, no individual WhatsApp)
+- **D-08:** DROP SendGrid entirely
+- **D-09:** Email via Nodemailer + Gmail SMTP (saum.mahek26@gmail.com) — individual emails per member, free
+- **D-10:** WhatsApp via whatsapp-web.js — auto-post to a dedicated read-only WhatsApp group, free
+- **D-11:** WhatsApp group is read-only (only the bot/coordinator posts). Guests join this group before the wedding.
+- **D-12:** Two types of WhatsApp group messages:
+  - Pre-event: Full photo schedule posted to the group
+  - During event: Auto-post as each group is queued ("Group 5 — Patel Family, you're up!")
+- **D-13:** whatsapp-web.js connects via QR code scan before the wedding. Coordinator scans once, session persists.
+- **D-14:** Total notification cost: $0
 
 ### Duplicate Send Prevention
-- **D-10:** Client + server dedup: UI disables button after tap (client debounce) + server checks lastResendAt timestamp to reject sends within cooldown window
-- **D-11:** Cooldown window duration — Claude's discretion to pick a reasonable default
+- **D-15:** Client + server dedup: UI disables button after tap + server checks lastResendAt timestamp
+- **D-16:** Cooldown window duration — Claude's discretion
 
-### Email Bug Fix
-- **D-12:** Line 120 of `app/api/notify/route.ts` has inverted success check: `emailStatus !== 'sent'` should be `=== 'sent'`. Claude's discretion on whether to also restructure the endpoint for better per-channel status reporting (Phase 2+ will need per-channel status).
+### Email Bug Fix → Full Rewrite
+- **D-17:** The notify route needs a full rewrite (not just a bug fix) since we're replacing all providers
 
-### Package Installation
-- **D-13:** Install Zustand + TanStack Query + Sonner in Phase 1. Do NOT install shadcn/ui — defer to Phase 3 (UI Overhaul) since it modifies globals.css
-- **D-14:** Fixed notification message template is fine — no need to make configurable. This is a one-time-use wedding app.
+### Package Changes
+- **D-18:** REMOVE: twilio, @sendgrid/mail
+- **D-19:** ADD: nodemailer, whatsapp-web.js
+- **D-20:** Keep: zustand, @tanstack/react-query, sonner, date-fns (already installed in 01-01)
+- **D-21:** Defer shadcn/ui to Phase 3
 
 ### Claude's Discretion
-- File location for Zustand store (stores/ vs lib/ vs hooks/)
+- File location for Zustand store
 - Cooldown window duration for duplicate prevention
-- Whether to restructure the notify endpoint beyond the bug fix
-- Exact notification message wording refinements
+- Notification message wording
+- WhatsApp session persistence strategy (file-based vs in-memory)
+- Gmail app password setup instructions for checkpoint
 
 </decisions>
 
@@ -53,49 +64,48 @@ Extend the data schema, wire Zustand state management, fix the email bug, and ve
 **Downstream agents MUST read these before planning or implementing.**
 
 ### State and Types
-- `types/index.ts` — Current QueueStatus type definition needs extending with 'arrived' state
-- `app/page.tsx` — 444-line file with 9 useState hooks to extract (lines 10-18)
+- `types/index.ts` — Extended QueueStatus type with 'arrived' state and GroupStateRecord
+- `store/queueStore.ts` — Zustand store (already built in 01-02)
+- `app/page.tsx` — 444-line file with useState hooks to extract
 
-### Notifications
-- `app/api/notify/route.ts` — Email bug on line 120 (inverted success check), full notification send logic
-- `.env.local` — Current Twilio/SendGrid credentials and config
+### Notifications (REWRITE)
+- `app/api/notify/route.ts` — Needs full rewrite: remove Twilio/SendGrid, add Nodemailer+Gmail + whatsapp-web.js group posting
 
 ### Components
-- `components/GroupCard.tsx` — Current group display component, will need updated props for new status model
+- `components/GroupCard.tsx` — Current group display component
 
 ### Research
-- `.planning/research/STACK.md` — Zustand v5, TanStack Query v5, Sonner recommendations with install sequence
-- `.planning/research/ARCHITECTURE.md` — Timer patterns, localStorage timestamp survival, re-queue ordering
-- `.planning/research/PITFALLS.md` — Twilio rate limits, SendGrid verification, localStorage quotas
+- `.planning/research/STACK.md` — Package recommendations
+- `.planning/research/ARCHITECTURE.md` — Timer patterns, localStorage
 
 </canonical_refs>
 
 <code_context>
 ## Existing Code Insights
 
-### Reusable Assets
-- `GroupCard.tsx`: Reusable shell for group display — needs new props for extended status model and timestamps
-- `types/index.ts`: QueueStatus union type, Group interface, GroupMember interface — extend rather than replace
-- Auth flow (checkAuth, handleLogout): Functional as-is, no changes needed in Phase 1
+### Completed in This Phase
+- `types/index.ts`: Extended with 5-state QueueStatus, GroupStateRecord, timestamps (01-01)
+- `store/queueStore.ts`: Zustand persist store with 7 actions (01-02)
+- `app/api/notify/route.ts`: Email bug fixed + 60s dedup added (01-03 task 1) — BUT needs full rewrite for new providers
 
 ### Established Patterns
-- API route handlers in `app/api/*/route.ts` — follow this pattern for any new endpoints
-- Error handling: try-catch with `console.error` and structured JSON responses `{ success, message }`
-- Environment variables via `process.env` — no runtime config library
+- API route handlers in `app/api/*/route.ts`
+- Error handling: try-catch with structured JSON responses
 - `@/` path alias for imports
 
 ### Integration Points
-- `page.tsx` state → Zustand store: All useState hooks and localStorage calls migrate
-- `types/index.ts` QueueStatus → add 'arrived' to union type
-- `notify/route.ts` → fix email bug, add dedup check using lastResendAt from request body
-- New store file → imported by page.tsx and GroupCard.tsx
+- notify/route.ts → full rewrite for Nodemailer + whatsapp-web.js
+- page.tsx → wire to Zustand store (01-04, still pending)
+- GroupCard.tsx → update for new status model (01-04, still pending)
 
 </code_context>
 
 <specifics>
 ## Specific Ideas
 
-No specific requirements — open to standard approaches. User wants things clean, working, and tested before the wedding.
+- WhatsApp group should be dedicated and read-only for photo queue notifications
+- Pre-event message: full schedule. During event: per-group announcement.
+- QR code scan happens once before wedding, session persists.
 
 </specifics>
 
@@ -109,4 +119,4 @@ None — discussion stayed within phase scope.
 ---
 
 *Phase: 01-foundation*
-*Context gathered: 2026-04-03*
+*Context gathered: 2026-04-03, updated 2026-04-05*
