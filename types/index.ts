@@ -38,6 +38,6 @@ export interface NotificationResponse {
   results?: {
     member: string;
     emailStatus: string;         // 'sent' | 'failed' | 'simulated-success'
-    whatsappStatus: string;      // 'sent' | 'failed' | 'skipped' | 'simulated-success' — individual via Cloud API
+    whatsappStatus: string;      // SMS status via Twilio: 'sent' | 'queued' | 'failed' | 'skipped' | 'simulated-success'
   }[];
 }
