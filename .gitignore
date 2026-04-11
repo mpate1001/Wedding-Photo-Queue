@@ -43,3 +43,10 @@ next-env.d.ts
 
 # idea
 .idea
+
+# WhatsApp Web session (whatsapp-web.js) — contains auth tokens, never commit
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Local tool state (oh-my-claudecode, etc.)
+.omc/
