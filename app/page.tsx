@@ -1,15 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import GroupCard from '@/components/GroupCard';
-import type { Group, QueueStatus } from '@/types';
+import { useQueueStore } from '@/store/queueStore';
+import type { Group, QueueStatus, NotificationResponse } from '@/types';
+
+interface GroupsApiResponse {
+  groups: Group[];
+}
 
 export default function Home() {
   const router = useRouter();
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Local UI state (kept as useState — not queue/group state)
   const [notifyingGroup, setNotifyingGroup] = useState<number | null>(null);
   const [filterStatus, setFilterStatus] = useState<QueueStatus | 'all'>('all');
   const [testMode, setTestMode] = useState(false);
@@ -17,13 +23,39 @@ export default function Home() {
   const [selectedGroups, setSelectedGroups] = useState<Set<number>>(new Set());
   const [bulkNotifying, setBulkNotifying] = useState(false);
 
+  // Zustand store — single source of truth for group status + queue order
+  const statuses = useQueueStore((s) => s.statuses);
+  const setStatus = useQueueStore((s) => s.setStatus);
+  const recordResend = useQueueStore((s) => s.recordResend);
+  const addToQueue = useQueueStore((s) => s.addToQueue);
+  const removeFromQueue = useQueueStore((s) => s.removeFromQueue);
+  const getRecord = useQueueStore((s) => s.getRecord);
+
+  // TanStack Query — fetches raw groups from Google Sheets
+  const {
+    data: groupsData,
+    isLoading,
+    isError,
+    error: queryError,
+    refetch,
+  } = useQuery<GroupsApiResponse>({
+    queryKey: ['groups'],
+    queryFn: async () => {
+      const response = await fetch('/api/groups');
+      if (!response.ok) throw new Error('Failed to fetch groups');
+      return response.json();
+    },
+    enabled: authenticated,
+    staleTime: 60_000,
+  });
+
   useEffect(() => {
     checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (authenticated) {
-      fetchGroups();
       checkTestMode();
     }
   }, [authenticated]);
@@ -58,10 +90,39 @@ export default function Home() {
     }
   };
 
+  const checkTestMode = async () => {
+    try {
+      const response = await fetch('/api/test-mode');
+      const data = await response.json();
+      setTestMode(data.testMode);
+    } catch (err) {
+      console.error('Failed to check test mode:', err);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('wedding_auth');
     router.push('/login');
   };
+
+  // Merge fetched groups with persisted statuses from the Zustand store.
+  // Dependencies: groupsData (server) + statuses (store). Recomputes whenever
+  // either side changes, so the dashboard stays reactive.
+  const groups: Group[] = useMemo(() => {
+    const raw = groupsData?.groups ?? [];
+    return raw.map((group) => {
+      const record = statuses[group.groupNumber];
+      if (!record) return { ...group, status: 'waiting' as QueueStatus };
+      return {
+        ...group,
+        status: record.status,
+        notifiedAt: record.notifiedAt,
+        lastResendAt: record.lastResendAt,
+        resendCount: record.resendCount,
+        confirmedAt: record.confirmedAt,
+      };
+    });
+  }, [groupsData, statuses]);
 
   const handleSelectGroup = (groupNumber: number, selected: boolean) => {
     setSelectedGroups((prev) => {
@@ -75,113 +136,21 @@ export default function Home() {
     });
   };
 
-  const handleSelectAll = () => {
-    setSelectedGroups(new Set(filteredGroups.map((g) => g.groupNumber)));
-  };
-
-  const handleDeselectAll = () => {
-    setSelectedGroups(new Set());
-  };
-
-  const handleBulkNotify = async () => {
-    if (selectedGroups.size === 0) {
-      alert('Please select at least one group to notify');
-      return;
-    }
-
-    const confirmed = confirm(`Send notifications to ${selectedGroups.size} selected group(s)?`);
-    if (!confirmed) return;
-
-    setBulkNotifying(true);
-
-    try {
-      const selectedGroupsData = groups.filter((g) => selectedGroups.has(g.groupNumber));
-      const results = [];
-
-      for (const group of selectedGroupsData) {
-        const response = await fetch('/api/notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            groupNumber: group.groupNumber,
-            members: group.members,
-          }),
-        });
-
-        const result = await response.json();
-        results.push({ group: group.groupNumber, result });
-
-        if (result.success) {
-          handleStatusChange(group.groupNumber, 'notified');
-        }
-      }
-
-      const successCount = results.filter((r) => r.result.success).length;
-      alert(`✅ Bulk notification complete!\n${successCount}/${selectedGroups.size} groups notified successfully`);
-      setSelectedGroups(new Set());
-    } catch (err) {
-      alert('Bulk notification failed. Please try again.');
-      console.error(err);
-    } finally {
-      setBulkNotifying(false);
-    }
-  };
-
-  const checkTestMode = async () => {
-    try {
-      const response = await fetch('/api/test-mode');
-      const data = await response.json();
-      setTestMode(data.testMode);
-    } catch (err) {
-      console.error('Failed to check test mode:', err);
-    }
-  };
-
-  const fetchGroups = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/groups');
-      if (!response.ok) throw new Error('Failed to fetch groups');
-
-      const data = await response.json();
-
-      // Load saved statuses from localStorage
-      const savedStatuses = localStorage.getItem('groupStatuses');
-      const statusMap = savedStatuses ? JSON.parse(savedStatuses) : {};
-
-      const groupsWithStatus = data.groups.map((group: Group) => ({
-        ...group,
-        status: statusMap[group.groupNumber] || 'waiting',
-      }));
-
-      setGroups(groupsWithStatus);
-      setError(null);
-    } catch (err) {
-      setError('Failed to load groups. Please check your configuration.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleStatusChange = (groupNumber: number, newStatus: QueueStatus) => {
-    setGroups((prev) =>
-      prev.map((group) =>
-        group.groupNumber === groupNumber ? { ...group, status: newStatus } : group
-      )
-    );
-
-    // Save to localStorage
-    const statusMap: Record<number, QueueStatus> = {};
-    groups.forEach((group) => {
-      statusMap[group.groupNumber] =
-        group.groupNumber === groupNumber ? newStatus : group.status;
-    });
-    localStorage.setItem('groupStatuses', JSON.stringify(statusMap));
+    setStatus(groupNumber, newStatus);
+    if (newStatus === 'queued' || newStatus === 'notified') {
+      addToQueue(groupNumber);
+    }
+    if (newStatus === 'completed' || newStatus === 'waiting') {
+      removeFromQueue(groupNumber);
+    }
   };
 
   const handleNotify = async (group: Group) => {
     setNotifyingGroup(group.groupNumber);
+    const record = getRecord(group.groupNumber);
+    const lastNotifiedAt = record.lastResendAt ?? record.notifiedAt;
+    const wasAlreadyNotified = record.status === 'notified';
 
     try {
       const response = await fetch('/api/notify', {
@@ -190,58 +159,125 @@ export default function Home() {
         body: JSON.stringify({
           groupNumber: group.groupNumber,
           members: group.members,
+          lastNotifiedAt,
         }),
       });
 
-      const result = await response.json();
+      const result: NotificationResponse = await response.json();
 
       if (result.success) {
-        handleStatusChange(group.groupNumber, 'notified');
-
-        // Show detailed results
-        let detailMessage = `✅ ${result.message}\n\n`;
-        if (result.results && result.results.length > 0) {
-          result.results.forEach((r: any) => {
-            detailMessage += `${r.member}:\n`;
-            detailMessage += `  SMS: ${r.smsStatus}\n`;
-            detailMessage += `  WhatsApp: ${r.whatsappStatus}\n`;
-            detailMessage += `  Email: ${r.emailStatus}\n\n`;
+        if (wasAlreadyNotified) {
+          // Resend path — keep status 'notified', bump lastResendAt/resendCount
+          // so Phase 2's auto-resend timer reads fresh values.
+          recordResend(group.groupNumber);
+          toast.success(`Group ${group.groupNumber} resent`, {
+            description: result.message,
+          });
+        } else {
+          // First notify — setStatus('notified') triggers the write-once
+          // notifiedAt guard in the store.
+          setStatus(group.groupNumber, 'notified');
+          addToQueue(group.groupNumber);
+          toast.success(`Group ${group.groupNumber} notified`, {
+            description: result.message,
           });
         }
-        alert(detailMessage);
+      } else if (response.status === 429) {
+        toast.warning(result.message);
       } else {
-        let errorMessage = `⚠️ ${result.message}\n\n`;
-        if (result.results && result.results.length > 0) {
-          result.results.forEach((r: any) => {
-            errorMessage += `${r.member}:\n`;
-            errorMessage += `  SMS: ${r.smsStatus}\n`;
-            errorMessage += `  WhatsApp: ${r.whatsappStatus}\n`;
-            errorMessage += `  Email: ${r.emailStatus}\n\n`;
-          });
-        }
-        alert(errorMessage);
+        toast.error(`Notification failed: ${result.message}`);
       }
     } catch (err) {
-      alert('Failed to send notifications. Please try again.');
+      toast.error('Failed to send notification. Check your connection.');
       console.error(err);
     } finally {
       setNotifyingGroup(null);
     }
   };
 
-  const filteredGroups = groups.filter((group) =>
-    filterStatus === 'all' || group.status === filterStatus
+  const handleBulkNotify = async () => {
+    if (selectedGroups.size === 0) {
+      toast.warning('Please select at least one group to notify');
+      return;
+    }
+
+    setBulkNotifying(true);
+
+    try {
+      const selectedGroupsData = groups.filter((g) => selectedGroups.has(g.groupNumber));
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const group of selectedGroupsData) {
+        const record = getRecord(group.groupNumber);
+        const lastNotifiedAt = record.lastResendAt ?? record.notifiedAt;
+        const wasAlreadyNotified = record.status === 'notified';
+
+        const response = await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            groupNumber: group.groupNumber,
+            members: group.members,
+            lastNotifiedAt,
+          }),
+        });
+
+        const result: NotificationResponse = await response.json();
+
+        if (result.success) {
+          successCount += 1;
+          if (wasAlreadyNotified) {
+            recordResend(group.groupNumber);
+          } else {
+            setStatus(group.groupNumber, 'notified');
+            addToQueue(group.groupNumber);
+          }
+        } else {
+          failCount += 1;
+        }
+      }
+
+      if (failCount === 0) {
+        toast.success(`Notified ${successCount} group(s)`);
+      } else if (successCount === 0) {
+        toast.error(`All ${failCount} notifications failed`);
+      } else {
+        toast.warning(
+          `Notified ${successCount}/${selectedGroups.size} groups — ${failCount} failed`
+        );
+      }
+      setSelectedGroups(new Set());
+    } catch (err) {
+      toast.error('Bulk notification failed. Please try again.');
+      console.error(err);
+    } finally {
+      setBulkNotifying(false);
+    }
+  };
+
+  const filteredGroups = groups.filter(
+    (group) => filterStatus === 'all' || group.status === filterStatus
   );
+
+  const handleSelectAll = () => {
+    setSelectedGroups(new Set(filteredGroups.map((g) => g.groupNumber)));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedGroups(new Set());
+  };
 
   const stats = {
     total: groups.length,
     waiting: groups.filter((g) => g.status === 'waiting').length,
     queued: groups.filter((g) => g.status === 'queued').length,
     notified: groups.filter((g) => g.status === 'notified').length,
+    arrived: groups.filter((g) => g.status === 'arrived').length,
     completed: groups.filter((g) => g.status === 'completed').length,
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -252,13 +288,17 @@ export default function Home() {
     );
   }
 
-  if (error) {
+  if (isError) {
+    const errorMessage =
+      queryError instanceof Error
+        ? queryError.message
+        : 'Failed to load groups. Please check your configuration.';
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center max-w-md">
-          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-red-600 mb-4">{errorMessage}</p>
           <button
-            onClick={fetchGroups}
+            onClick={() => refetch()}
             className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
           >
             Retry
@@ -291,7 +331,7 @@ export default function Home() {
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
               Wedding Photo Queue
             </h1>
-            <p className="text-gray-600">Mahek & Saumya's Wedding</p>
+            <p className="text-gray-600">Mahek &amp; Saumya&apos;s Wedding</p>
           </div>
           <button
             onClick={handleLogout}
@@ -302,7 +342,7 @@ export default function Home() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
           <div className="bg-white rounded-lg p-4 shadow">
             <p className="text-sm text-gray-600">Total Groups</p>
             <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
@@ -318,6 +358,10 @@ export default function Home() {
           <div className="bg-white rounded-lg p-4 shadow">
             <p className="text-sm text-gray-600">Notified</p>
             <p className="text-2xl font-bold text-yellow-600">{stats.notified}</p>
+          </div>
+          <div className="bg-white rounded-lg p-4 shadow">
+            <p className="text-sm text-gray-600">Arrived</p>
+            <p className="text-2xl font-bold text-purple-600">{stats.arrived}</p>
           </div>
           <div className="bg-white rounded-lg p-4 shadow">
             <p className="text-sm text-gray-600">Completed</p>
@@ -394,6 +438,16 @@ export default function Home() {
             📲 Notified ({stats.notified})
           </button>
           <button
+            onClick={() => setFilterStatus('arrived')}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              filterStatus === 'arrived'
+                ? 'bg-purple-600 text-white'
+                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            🙋 Arrived ({stats.arrived})
+          </button>
+          <button
             onClick={() => setFilterStatus('completed')}
             className={`px-4 py-2 rounded-md font-medium transition-colors ${
               filterStatus === 'completed'
@@ -411,7 +465,7 @@ export default function Home() {
             ☑️ Select All ({filteredGroups.length})
           </button>
           <button
-            onClick={fetchGroups}
+            onClick={() => refetch()}
             className="px-4 py-2 bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-md hover:bg-indigo-200 font-medium transition-colors"
           >
             🔄 Refresh
