@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Checkpoint 01-03 Task 3: WhatsApp QR scan + Gmail App Password setup"
-last_updated: "2026-04-05T15:15:20.261Z"
-last_activity: 2026-04-04
+stopped_at: "Ready to execute 01-04 — tree clean, plan re-verified against current /api/notify contract"
+last_updated: "2026-04-11T00:00:00.000Z"
+last_activity: 2026-04-11
 progress:
   total_phases: 4
   completed_phases: 0
@@ -87,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-05T15:15:13.476Z
-Stopped at: Checkpoint 01-03 Task 3: WhatsApp QR scan + Gmail App Password setup
+Last session: 2026-04-11
+Stopped at: Ready to execute 01-04. Uncommitted tree cleaned up (gitignore WhatsApp session, test routes gated with TEST_MODE, README fix, stray devDep removed). 01-04-PLAN.md re-verified against current /api/notify/route.ts and patched to wire recordResend on manual resend path.
 Resume file: None
