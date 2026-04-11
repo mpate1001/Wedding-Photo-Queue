@@ -478,6 +478,7 @@ export default function Home() {
             <GroupCard
               key={group.groupNumber}
               group={group}
+              record={getRecord(group.groupNumber)}
               onStatusChange={handleStatusChange}
               onNotify={handleNotify}
               isNotifying={notifyingGroup === group.groupNumber}
