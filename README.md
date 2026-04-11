@@ -99,11 +99,11 @@ Visit `http://localhost:3000` and login with your password.
 
 Your spreadsheet should have these columns (with header row):
 
-| Group Number | Name | Phone | Email |
-|--------------|------|-------|-------|
-| 1 | John Smith | 2025551234 | john@example.com |
-| 1 | Jane Smith | 2025555678 | jane@example.com |
-| 2 | Bob Jones | 2025559012 | bob@example.com |
+| Group Number | Name       | Phone      | Email            |
+|--------------|------------|------------|------------------|
+| 1            | John Smith | 2025551234 | john@example.com |
+| 1            | Jane Smith | 2025555678 | jane@example.com |
+| 2            | Bob Jones  | 2025559012 | bob@example.com  |
 
 **Note:** Phone numbers will auto-format with +1 prefix. Multiple rows with same group number = multiple members.
 

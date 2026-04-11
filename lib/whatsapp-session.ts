@@ -71,6 +71,14 @@ export function getWhatsAppStatus(): {
   status: typeof global.__whatsappStatus;
   qr?: string;
 } {
+  // If we have a client and the status variable was lost (hot reload), check actual client state
+  if (global.__whatsappClient && (!global.__whatsappStatus || global.__whatsappStatus === 'initializing')) {
+    const info = global.__whatsappClient.info;
+    if (info && info.wid) {
+      global.__whatsappStatus = 'ready';
+    }
+  }
+
   return {
     status: global.__whatsappStatus ?? 'initializing',
     qr: global.__whatsappQR,
