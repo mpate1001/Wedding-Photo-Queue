@@ -46,8 +46,12 @@ export async function POST(request: NextRequest) {
       results: [],
     };
 
+    const isResend = !!body.lastNotifiedAt;
+
     const messageText = (name: string) =>
-      `Hi ${name}! It's time for your group photo with Mahek & Saumya! Please head to the Mandap now.`;
+      isResend
+        ? `Hi ${name}, this is a friendly reminder that your group photo with Mahek & Saumya is still pending. Please head to the Mandap at your earliest convenience so we can wrap up group photos on time. Thank you!`
+        : `Hi ${name}! It's time for your group photo with Mahek & Saumya! Please head to the Mandap now.`;
 
     // ── Per-member: Email (Gmail SMTP) + SMS (Twilio) ────────────────────────
     if (isTestMode) {
@@ -81,9 +85,23 @@ export async function POST(request: NextRequest) {
           await transporter.sendMail({
             from: `"Wedding Photo Queue" <${process.env.GMAIL_USER}>`,
             to: member.email,
-            subject: 'Time for Your Group Photo!',
-            text: `Hi ${member.name}!\n\nIt's time for your group photo with Mahek & Saumya!\n\nPlease head to the Mandap now.\n\nThank you!\n- Wedding Planning Team`,
-            html: `
+            subject: isResend ? 'Reminder: Your Group Photo is Still Pending' : 'Time for Your Group Photo!',
+            text: isResend
+              ? `Hi ${member.name},\n\nThis is a friendly reminder that your group photo with Mahek & Saumya is still pending.\n\nPlease head to the Mandap at your earliest convenience so we can wrap up group photos on time.\n\nThank you!\n- Wedding Planning Team`
+              : `Hi ${member.name}!\n\nIt's time for your group photo with Mahek & Saumya!\n\nPlease head to the Mandap now.\n\nThank you!\n- Wedding Planning Team`,
+            html: isResend
+              ? `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #e67e22;">Reminder: Your Group Photo is Still Pending</h2>
+                <p style="font-size: 16px;">Hi ${member.name},</p>
+                <p style="font-size: 16px;">This is a friendly reminder that your group photo with <strong>Mahek &amp; Saumya</strong> is still pending.</p>
+                <p style="font-size: 16px; background-color: #fef9e7; padding: 15px; border-left: 4px solid #e67e22;">
+                  <strong>Please head to the Mandap at your earliest convenience</strong> so we can wrap up group photos on time.
+                </p>
+                <p style="font-size: 14px; color: #7f8c8d; margin-top: 20px;">Thank you!<br>- Wedding Planning Team</p>
+              </div>
+              `
+              : `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #2c3e50;">Time for Your Group Photo!</h2>
                 <p style="font-size: 16px;">Hi ${member.name}!</p>
@@ -93,7 +111,7 @@ export async function POST(request: NextRequest) {
                 </p>
                 <p style="font-size: 14px; color: #7f8c8d; margin-top: 20px;">Thank you!<br>- Wedding Planning Team</p>
               </div>
-            `,
+              `,
           });
           emailStatus = 'sent';
         } catch (emailError) {
@@ -125,7 +143,9 @@ export async function POST(request: NextRequest) {
 
     // ── WhatsApp Group Post (whatsapp-web.js) — best-effort ──────────────────
     const groupNames = members.map((m) => m.name).join(', ');
-    const whatsappGroupMessage = `Group ${groupNumber} — ${groupNames}, you're up! Please head to the Mandap now for your group photo. Thank you!`;
+    const whatsappGroupMessage = isResend
+      ? `Reminder: Group ${groupNumber} — ${groupNames}, your group photo is still pending. Please head to the Mandap at your earliest convenience so we can wrap up group photos on time. Thank you!`
+      : `Group ${groupNumber} — ${groupNames}, you're up! Please head to the Mandap now for your group photo. Thank you!`;
 
     if (isTestMode) {
       console.log(`[TEST] Would post to WhatsApp group: "${whatsappGroupMessage}"`);
