@@ -13,6 +13,7 @@ Four phases that transform a test-mode demo into a wedding-day-ready tool. Phase
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Foundation** - Extend the data schema, wire Zustand state, and verify real notifications deliver to phones
+- [ ] **Phase 01.1: Security Hardening + Twilio Removal** - Auth-gate all API routes, remove dead Twilio/SMS code, fix email XSS, server-side dedup, WhatsApp init race fix
 - [ ] **Phase 2: Queue Mechanics** - Build auto-resend, re-queue-to-back, and coordinator arrival confirmation on top of a verified stack
 - [ ] **Phase 3: UI/UX Overhaul** - Redesign the dashboard for mobile-first, one-tap coordinator use with shadcn/ui components
 - [ ] **Phase 4: Polish** - Add progressive enhancements: haptics, batch queue, auto-advance, and performance hardening
@@ -37,15 +38,17 @@ Plans:
 - [x] 01-03-PLAN.md — Fix email bug, add server-side dedup cooldown, verify real notification delivery
 - [x] 01-04-PLAN.md — Wire page.tsx to Zustand store, update GroupCard for extended status model, mount providers
 
-### Phase 01.1: Twilio provisioning + notify auth gate + XSS fix (INSERTED)
+### Phase 01.1: Security Hardening + Twilio Removal (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** Harden the notification stack for wedding-day production: auth-gate all sensitive API routes, remove dead Twilio/SMS channel, fix email XSS, enforce server-side dedup cooldown, and fix WhatsApp singleton init race
+**Requirements**: SEC-01, SEC-02, SEC-03, SEC-04, SEC-05, SEC-06
 **Depends on:** Phase 01
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 01.1 to break down)
+- [ ] 01.1-01-PLAN.md — Create requireAuth + escapeHtml helpers, wire auth into diagnostic routes, update dashboard Authorization headers, clean up types
+- [ ] 01.1-02-PLAN.md — Overhaul notify route (auth gate + remove Twilio/SMS + escapeHtml + server-side dedup + whenReady), remove twilio package
+- [ ] 01.1-03-PLAN.md — Fix WhatsApp singleton init race (cache init promise, add whenReady), remove hardcoded Chromium path
 
 ### Phase 2: Queue Mechanics
 **Goal**: The coordinator can manage no-shows automatically and confirm arrivals without manual intervention
@@ -86,11 +89,12 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+Phases execute in numeric order: 1 → 01.1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 1/4 | In Progress|  |
+| 1. Foundation | 4/4 | Complete |  |
+| 01.1 Security Hardening | 0/3 | Not started | - |
 | 2. Queue Mechanics | 0/TBD | Not started | - |
 | 3. UI/UX Overhaul | 0/TBD | Not started | - |
 | 4. Polish | 0/TBD | Not started | - |
