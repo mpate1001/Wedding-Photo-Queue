@@ -50,3 +50,6 @@ next-env.d.ts
 
 # Local tool state (oh-my-claudecode, etc.)
 .omc/
+
+# Batch state for guest auto-add cron (contains timestamps, safe but unnecessary to commit)
+.batch-state.json
