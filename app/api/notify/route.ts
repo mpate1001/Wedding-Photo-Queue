@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
 
     const messageText = (name: string) =>
       isResend
-        ? `Hi ${name}, this is a friendly reminder that your group photo with Mahek & Saumya is still pending. Please head to the Mandap at your earliest convenience so we can wrap up group photos on time. Thank you!`
-        : `Hi ${name}! It's time for your group photo with Mahek & Saumya! Please head to the Mandap now.`;
+        ? `Hi ${name}, this is a friendly reminder from Saumya & Mahek — we're still waiting for you to come take a group photo with us! Please head to the Mandap and queue up on the left side as soon as you can so we can wrap up group photos on time. Thank you!`
+        : `Hi ${name}! This is Saumya & Mahek calling you to come take a photo with us! Please head to the Mandap and queue up on the left side of the Mandap now. Thank you!`;
 
     // ── Per-member: Email (Gmail SMTP) + SMS (Twilio) ────────────────────────
     if (isTestMode) {
@@ -85,31 +85,31 @@ export async function POST(request: NextRequest) {
           await transporter.sendMail({
             from: `"Wedding Photo Queue" <${process.env.GMAIL_USER}>`,
             to: member.email,
-            subject: isResend ? 'Reminder: Your Group Photo is Still Pending' : 'Time for Your Group Photo!',
+            subject: isResend ? 'Reminder: We\'re Still Waiting for Your Group Photo!' : 'Saumya & Mahek Are Calling You for a Photo!',
             text: isResend
-              ? `Hi ${member.name},\n\nThis is a friendly reminder that your group photo with Mahek & Saumya is still pending.\n\nPlease head to the Mandap at your earliest convenience so we can wrap up group photos on time.\n\nThank you!\n- Wedding Planning Team`
-              : `Hi ${member.name}!\n\nIt's time for your group photo with Mahek & Saumya!\n\nPlease head to the Mandap now.\n\nThank you!\n- Wedding Planning Team`,
+              ? `Hi ${member.name},\n\nThis is a friendly reminder from Saumya & Mahek — we're still waiting for you to come take a group photo with us!\n\nPlease head to the Mandap and queue up on the left side as soon as you can so we can wrap up group photos on time.\n\nThank you!\n- Saumya & Mahek`
+              : `Hi ${member.name}!\n\nThis is Saumya & Mahek calling you to come take a photo with us!\n\nPlease head to the Mandap and queue up on the left side of the Mandap now.\n\nThank you!\n- Saumya & Mahek`,
             html: isResend
               ? `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #e67e22;">Reminder: Your Group Photo is Still Pending</h2>
+                <h2 style="color: #e67e22;">Reminder: We're Still Waiting for Your Group Photo!</h2>
                 <p style="font-size: 16px;">Hi ${member.name},</p>
-                <p style="font-size: 16px;">This is a friendly reminder that your group photo with <strong>Mahek &amp; Saumya</strong> is still pending.</p>
+                <p style="font-size: 16px;">This is a friendly reminder from <strong>Saumya &amp; Mahek</strong> — we're still waiting for you to come take a group photo with us!</p>
                 <p style="font-size: 16px; background-color: #fef9e7; padding: 15px; border-left: 4px solid #e67e22;">
-                  <strong>Please head to the Mandap at your earliest convenience</strong> so we can wrap up group photos on time.
+                  <strong>Please head to the Mandap and queue up on the left side</strong> as soon as you can so we can wrap up group photos on time.
                 </p>
-                <p style="font-size: 14px; color: #7f8c8d; margin-top: 20px;">Thank you!<br>- Wedding Planning Team</p>
+                <p style="font-size: 14px; color: #7f8c8d; margin-top: 20px;">Thank you!<br>- Saumya &amp; Mahek</p>
               </div>
               `
               : `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #2c3e50;">Time for Your Group Photo!</h2>
+                <h2 style="color: #2c3e50;">Saumya &amp; Mahek Are Calling You for a Photo!</h2>
                 <p style="font-size: 16px;">Hi ${member.name}!</p>
-                <p style="font-size: 16px;">It's time for your group photo with <strong>Mahek &amp; Saumya</strong>!</p>
+                <p style="font-size: 16px;">This is <strong>Saumya &amp; Mahek</strong> calling you to come take a photo with us!</p>
                 <p style="font-size: 16px; background-color: #f8f9fa; padding: 15px; border-left: 4px solid #4a90e2;">
-                  <strong>Please head to the Mandap now.</strong>
+                  <strong>Please head to the Mandap and queue up on the left side of the Mandap now.</strong>
                 </p>
-                <p style="font-size: 14px; color: #7f8c8d; margin-top: 20px;">Thank you!<br>- Wedding Planning Team</p>
+                <p style="font-size: 14px; color: #7f8c8d; margin-top: 20px;">Thank you!<br>- Saumya &amp; Mahek</p>
               </div>
               `,
           });
@@ -144,8 +144,8 @@ export async function POST(request: NextRequest) {
     // ── WhatsApp Group Post (whatsapp-web.js) — best-effort ──────────────────
     const groupNames = members.map((m) => m.name).join(', ');
     const whatsappGroupMessage = isResend
-      ? `Reminder: Group ${groupNumber} — ${groupNames}, your group photo is still pending. Please head to the Mandap at your earliest convenience so we can wrap up group photos on time. Thank you!`
-      : `Group ${groupNumber} — ${groupNames}, you're up! Please head to the Mandap now for your group photo. Thank you!`;
+      ? `Reminder: Group ${groupNumber} — ${groupNames}, this is Saumya & Mahek — we're still waiting for you to come take a group photo with us! Please head to the Mandap and queue up on the left side as soon as you can so we can wrap up group photos on time. Thank you! 📸`
+      : `Group ${groupNumber} — ${groupNames}, this is Saumya & Mahek calling you to come take a photo with us! Please head to the Mandap and queue up on the left side of the Mandap now. Thank you! 📸`;
 
     if (isTestMode) {
       console.log(`[TEST] Would post to WhatsApp group: "${whatsappGroupMessage}"`);
@@ -184,8 +184,8 @@ export async function POST(request: NextRequest) {
         const chatId = `${cleanNumber}@c.us`;
 
         const dmMessage = isResend
-          ? `Hi ${member.name}, this is a friendly reminder that your group photo with Mahek & Saumya is still pending. Please head to the Mandap at your earliest convenience so we can wrap up group photos on time. Thank you! 📸`
-          : `Hi ${member.name}! It's time for your group photo with Mahek & Saumya! 📸 Please head to the Mandap now. Thank you!`;
+          ? `Hi ${member.name}, this is a friendly reminder from Saumya & Mahek — we're still waiting for you to come take a group photo with us! Please head to the Mandap and queue up on the left side as soon as you can so we can wrap up group photos on time. Thank you! 📸`
+          : `Hi ${member.name}! This is Saumya & Mahek calling you to come take a photo with us! Please head to the Mandap and queue up on the left side of the Mandap now. Thank you! 📸`;
 
         if (isTestMode) {
           console.log(`[TEST] Would WhatsApp DM ${member.phone} (${chatId}): ${member.name}`);
