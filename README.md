@@ -12,7 +12,7 @@ A password-protected web application to manage group photo queuing for Mahek & S
 - 📲 **Triple notification redundancy**: SMS + WhatsApp + Email sent simultaneously
 - 👥 **Multi-member groups**: Multiple people per group number
 - 🔢 **Auto phone formatting**: Adds +1 prefix to US numbers
-- 📱 **Mobile-responsive design**: Works on phones and tablets
+- **Mobile-responsive design**: Works on phones and tablets
 
 ### Queue Management
 - **4 status levels**: Waiting → Queued → Notified → Completed

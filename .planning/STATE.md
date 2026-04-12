@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Phase 01 code reviewed (4 crit / 9 warn / 7 info — see 01-REVIEW.md). Phase 01.1 inserted for Twilio provisioning + /api/notify auth gate + email XSS fix + dedup cooldown server-side. Awaiting Twilio account credentials from user before 01.1 planning."
-last_updated: "2026-04-11T14:16:09.972Z"
-last_activity: 2026-04-11 -- Phase 01 plans complete, 01.1 inserted
+stopped_at: Phase 01 plans 01-01..01-04 all shipped (commits 0ad0ff0, eabe890, f9a6ef2, 373375e). Code review produced 01-REVIEW.md (c0078a2) with 4 critical / 9 warning / 7 info findings. Phase 01.1 inserted for Twilio + auth gate + XSS + server-side dedup cooldown. User confirmed 3-channel architecture (email/SMS/WhatsApp-group). Blocked on user provisioning a real Twilio number before 01.1 can be planned.
+last_updated: "2026-04-12T04:24:40.240Z"
+last_activity: 2026-04-12 -- Phase 01.1 execution started
 progress:
   total_phases: 5
-  completed_phases: 0
-  total_plans: 4
+  completed_phases: 1
+  total_plans: 7
   completed_plans: 4
-  percent: 80
+  percent: 57
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** The coordinator can move through 100+ groups as fast as the photographer can shoot — no bottlenecks, no confusion, no missed families.
-**Current focus:** Phase 01 — foundation
+**Current focus:** Phase 01.1 — twilio-provisioning-notify-auth-gate-xss-fix
 
 ## Current Position
 
-Phase: 01.1 (twilio-provisioning-notify-auth-gate-xss-fix) — INSERTED, NOT PLANNED
-Plan: 4 of 4 complete in Phase 01
-Status: Phase 01 code complete; 01.1 inserted before Phase 02 can start
-Last activity: 2026-04-11 -- Phase 01 plans 01-01..01-04 shipped; 01-REVIEW.md produced; 01.1 inserted
+Phase: 01.1 (twilio-provisioning-notify-auth-gate-xss-fix) — EXECUTING
+Plan: 1 of 3
+Status: Executing Phase 01.1
+Last activity: 2026-04-12 -- Phase 01.1 execution started
 
 Progress: [████████░░] 80%
 
