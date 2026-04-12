@@ -144,8 +144,8 @@ export async function POST(request: NextRequest) {
     // ── WhatsApp Group Post (whatsapp-web.js) — best-effort ──────────────────
     const groupNames = members.map((m) => m.name).join(', ');
     const whatsappGroupMessage = isResend
-      ? `Reminder: Group ${groupNumber} — ${groupNames}, this is Saumya & Mahek — we're still waiting for you to come take a group photo with us! Please head to the Mandap and queue up on the left side as soon as you can so we can wrap up group photos on time. Thank you! 📸`
-      : `Group ${groupNumber} — ${groupNames}, this is Saumya & Mahek calling you to come take a photo with us! Please head to the Mandap and queue up on the left side of the Mandap now. Thank you! 📸`;
+      ? `⏳ *Reminder*\nGroup ${groupNumber} — ${groupNames}\n\nThis is Saumya & Mahek — we're still waiting for you to come take a group photo with us!\n\nPlease head to the Mandap and queue up on the left side as soon as you can so we can wrap up group photos on time.\n\nThank you! 📸`
+      : `📸 *Group Photo Time!*\nGroup ${groupNumber} — ${groupNames}\n\nThis is Saumya & Mahek calling you to come take a photo with us!\n\nPlease head to the Mandap and queue up on the left side of the Mandap now.\n\nThank you!`;
 
     if (isTestMode) {
       console.log(`[TEST] Would post to WhatsApp group: "${whatsappGroupMessage}"`);
