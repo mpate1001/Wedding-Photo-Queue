@@ -315,7 +315,7 @@ export default function Home() {
         {testMode && (
           <div className="mb-6 bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4">
             <div className="flex items-center gap-2">
-              <span className="text-2xl">🧪</span>
+              <span className="text-2xl font-bold">TEST</span>
               <div>
                 <p className="font-bold text-yellow-900">TEST MODE ACTIVE</p>
                 <p className="text-sm text-yellow-800">
@@ -337,7 +337,7 @@ export default function Home() {
             onClick={handleLogout}
             className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
           >
-            🔒 Logout
+            Logout
           </button>
         </div>
 
@@ -389,7 +389,7 @@ export default function Home() {
                 disabled={bulkNotifying}
                 className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors"
               >
-                {bulkNotifying ? 'Sending...' : `📲 Notify ${selectedGroups.size} Group${selectedGroups.size !== 1 ? 's' : ''}`}
+                {bulkNotifying ? 'Sending...' : `Notify ${selectedGroups.size} Group${selectedGroups.size !== 1 ? 's' : ''}`}
               </button>
             </div>
           </div>
@@ -405,7 +405,7 @@ export default function Home() {
                 : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
             }`}
           >
-            📋 All Groups ({stats.total})
+            All Groups ({stats.total})
           </button>
           <button
             onClick={() => setFilterStatus('waiting')}
@@ -415,7 +415,7 @@ export default function Home() {
                 : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
             }`}
           >
-            ⏳ Waiting ({stats.waiting})
+            Waiting ({stats.waiting})
           </button>
           <button
             onClick={() => setFilterStatus('queued')}
@@ -425,7 +425,7 @@ export default function Home() {
                 : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
             }`}
           >
-            📝 Queued ({stats.queued})
+            Queued ({stats.queued})
           </button>
           <button
             onClick={() => setFilterStatus('notified')}
@@ -435,7 +435,7 @@ export default function Home() {
                 : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
             }`}
           >
-            📲 Notified ({stats.notified})
+            Notified ({stats.notified})
           </button>
           <button
             onClick={() => setFilterStatus('arrived')}
@@ -445,7 +445,7 @@ export default function Home() {
                 : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
             }`}
           >
-            🙋 Arrived ({stats.arrived})
+            Arrived ({stats.arrived})
           </button>
           <button
             onClick={() => setFilterStatus('completed')}
@@ -455,20 +455,20 @@ export default function Home() {
                 : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
             }`}
           >
-            ✅ Completed ({stats.completed})
+            Completed ({stats.completed})
           </button>
           <div className="flex-grow"></div>
           <button
             onClick={handleSelectAll}
             className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 font-medium transition-colors"
           >
-            ☑️ Select All ({filteredGroups.length})
+            Select All ({filteredGroups.length})
           </button>
           <button
             onClick={() => refetch()}
             className="px-4 py-2 bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-md hover:bg-indigo-200 font-medium transition-colors"
           >
-            🔄 Refresh
+            Refresh
           </button>
         </div>
 
