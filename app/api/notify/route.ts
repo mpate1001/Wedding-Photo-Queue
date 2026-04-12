@@ -3,7 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import twilio from 'twilio';
 import { getWhatsAppClient, getWhatsAppStatus } from '@/lib/whatsapp-session';
+import { escapeHtml } from '@/lib/escape-html';
 import type { NotificationRequest, NotificationResponse } from '@/types';
+
+// Server-side dedup cooldown: Map<groupNumber, lastSentTimestamp>
+// Safe on Hetzner VPS (long-running process); Map persists across requests
+const lastSentMap = new Map<number, number>();
+const COOLDOWN_MS = 60_000;
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,12 +17,12 @@ export async function POST(request: NextRequest) {
     const { groupNumber, members } = body;
 
     // Dedup guard: reject if last notification was sent within cooldown window
-    const COOLDOWN_MS = 60_000;
-    if (body.lastNotifiedAt && Date.now() - body.lastNotifiedAt < COOLDOWN_MS) {
+    const lastSent = lastSentMap.get(groupNumber);
+    if (lastSent && Date.now() - lastSent < COOLDOWN_MS) {
       return NextResponse.json(
         {
           success: false,
-          message: `Notification sent too recently. Wait ${Math.ceil((COOLDOWN_MS - (Date.now() - body.lastNotifiedAt)) / 1000)} seconds before resending.`,
+          message: `Notification sent too recently. Wait ${Math.ceil((COOLDOWN_MS - (Date.now() - lastSent)) / 1000)} seconds before resending.`,
         },
         { status: 429 }
       );
@@ -46,7 +52,10 @@ export async function POST(request: NextRequest) {
       results: [],
     };
 
-    const isResend = !!body.lastNotifiedAt;
+    // isResend is determined by whether the group has been sent within the last 10 minutes.
+    // We don't rely on client-supplied lastNotifiedAt — server-side map is the authority.
+    // For the first call (no lastSent), isResend is false.
+    const isResend = lastSent !== undefined;
 
     const messageText = (name: string) =>
       isResend
@@ -61,7 +70,7 @@ export async function POST(request: NextRequest) {
         response.results!.push({
           member: member.name,
           emailStatus: 'simulated-success',
-          whatsappStatus: 'simulated-success',
+          whatsappDmStatus: 'simulated-success',
         });
       }
     } else {
@@ -93,7 +102,7 @@ export async function POST(request: NextRequest) {
               ? `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #e67e22;">Reminder: We're Still Waiting for Your Group Photo!</h2>
-                <p style="font-size: 16px;">Hi ${member.name},</p>
+                <p style="font-size: 16px;">Hi ${escapeHtml(member.name)},</p>
                 <p style="font-size: 16px;">This is a friendly reminder from <strong>Saumya &amp; Mahek</strong> — we're still waiting for you to come take a group photo with us!</p>
                 <p style="font-size: 16px; background-color: #fef9e7; padding: 15px; border-left: 4px solid #e67e22;">
                   <strong>Please head to the Mandap and queue up on the left side</strong> as soon as you can so we can wrap up group photos on time.
@@ -104,7 +113,7 @@ export async function POST(request: NextRequest) {
               : `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #2c3e50;">Saumya &amp; Mahek Are Calling You for a Photo!</h2>
-                <p style="font-size: 16px;">Hi ${member.name}!</p>
+                <p style="font-size: 16px;">Hi ${escapeHtml(member.name)}!</p>
                 <p style="font-size: 16px;">This is <strong>Saumya &amp; Mahek</strong> calling you to come take a photo with us!</p>
                 <p style="font-size: 16px; background-color: #f8f9fa; padding: 15px; border-left: 4px solid #4a90e2;">
                   <strong>Please head to the Mandap and queue up on the left side of the Mandap now.</strong>
@@ -136,7 +145,7 @@ export async function POST(request: NextRequest) {
         response.results!.push({
           member: member.name,
           emailStatus,
-          whatsappStatus: smsStatus, // reusing whatsappStatus field for SMS status
+          whatsappDmStatus: smsStatus,
         });
       }
     }
@@ -202,19 +211,22 @@ export async function POST(request: NextRequest) {
       console.warn(`[WhatsApp DM] Client not ready (status: ${waStatus}) — skipping individual messages`);
     }
 
+    // Record send timestamp for dedup cooldown
+    lastSentMap.set(groupNumber, Date.now());
+
     // Determine overall success: at least one channel must succeed per member
     const anySuccess = response.results!.some(
       (r) => r.emailStatus === 'sent' || r.emailStatus === 'simulated-success' ||
-             r.whatsappStatus === 'sent' || r.whatsappStatus === 'simulated-success' ||
-             r.whatsappStatus === 'queued'
+             r.whatsappDmStatus === 'sent' || r.whatsappDmStatus === 'simulated-success' ||
+             r.whatsappDmStatus === 'queued'
     );
     if (!anySuccess) {
       response.success = false;
       response.message = 'All notifications failed';
     } else {
       const emailCount = response.results!.filter((r) => r.emailStatus === 'sent' || r.emailStatus === 'simulated-success').length;
-      const smsCount = response.results!.filter((r) => ['sent', 'queued', 'simulated-success'].includes(r.whatsappStatus)).length;
-      response.message = `Sent to ${members.length} member(s): ${emailCount} emails, ${smsCount} SMS`;
+      const whatsappDmCount = response.results!.filter((r) => ['sent', 'queued', 'simulated-success'].includes(r.whatsappDmStatus)).length;
+      response.message = `Sent to ${members.length} member(s): ${emailCount} emails, ${whatsappDmCount} WhatsApp DMs`;
     }
 
     return NextResponse.json(response);

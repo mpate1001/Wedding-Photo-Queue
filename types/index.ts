@@ -25,10 +25,10 @@ export interface GroupStateRecord {
   confirmedAt?: number;      // Unix ms — set when coordinator taps "Arrived"; suppresses further resends
 }
 
+// Server enforces 60s dedup cooldown per groupNumber — no client-supplied timestamp needed
 export interface NotificationRequest {
   groupNumber: number;
   members: GroupMember[];
-  lastNotifiedAt?: number;   // Optional — server uses for dedup cooldown check
 }
 
 export interface NotificationResponse {
@@ -38,6 +38,6 @@ export interface NotificationResponse {
   results?: {
     member: string;
     emailStatus: string;         // 'sent' | 'failed' | 'simulated-success'
-    whatsappStatus: string;      // SMS status via Twilio: 'sent' | 'queued' | 'failed' | 'skipped' | 'simulated-success'
+    whatsappDmStatus: string;    // WhatsApp DM status: 'sent' | 'failed' | 'skipped' | 'simulated-success'
   }[];
 }

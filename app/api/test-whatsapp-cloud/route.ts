@@ -1,6 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/require-auth';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   if (process.env.TEST_MODE !== 'true') {
     return NextResponse.json(
       { error: 'Diagnostic route disabled. Set TEST_MODE=true to enable.' },

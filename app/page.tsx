@@ -149,17 +149,18 @@ export default function Home() {
   const handleNotify = async (group: Group) => {
     setNotifyingGroup(group.groupNumber);
     const record = getRecord(group.groupNumber);
-    const lastNotifiedAt = record.lastResendAt ?? record.notifiedAt;
     const wasAlreadyNotified = record.status === 'notified';
 
     try {
       const response = await fetch('/api/notify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('wedding_auth')}`,
+        },
         body: JSON.stringify({
           groupNumber: group.groupNumber,
           members: group.members,
-          lastNotifiedAt,
         }),
       });
 
@@ -210,16 +211,17 @@ export default function Home() {
 
       for (const group of selectedGroupsData) {
         const record = getRecord(group.groupNumber);
-        const lastNotifiedAt = record.lastResendAt ?? record.notifiedAt;
         const wasAlreadyNotified = record.status === 'notified';
 
         const response = await fetch('/api/notify', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('wedding_auth')}`,
+          },
           body: JSON.stringify({
             groupNumber: group.groupNumber,
             members: group.members,
-            lastNotifiedAt,
           }),
         });
 
