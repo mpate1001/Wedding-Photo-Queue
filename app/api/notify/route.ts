@@ -144,8 +144,8 @@ export async function POST(request: NextRequest) {
     // ── WhatsApp Group Post (whatsapp-web.js) — best-effort ──────────────────
     const groupNames = members.map((m) => m.name).join(', ');
     const whatsappGroupMessage = isResend
-      ? `⏳ *Reminder*\nGroup ${groupNumber} — ${groupNames}\n\nThis is Saumya & Mahek — we're still waiting for you to come take a group photo with us!\n\nPlease head to the Mandap and queue up on the left side as soon as you can so we can wrap up group photos on time.\n\nThank you! 📸`
-      : `📸 *Group Photo Time!*\nGroup ${groupNumber} — ${groupNames}\n\nThis is Saumya & Mahek calling you to come take a photo with us!\n\nPlease head to the Mandap and queue up on the left side of the Mandap now.\n\nThank you!`;
+      ? `*Reminder*\nGroup ${groupNumber} — ${groupNames}\n\nThis is Saumya & Mahek — we're still waiting for you to come take a group photo with us!\n\nPlease head to the Mandap and queue up on the left side as soon as you can so we can wrap up group photos on time.\n\nThank you!`
+      : `*Group Photo Time!*\nGroup ${groupNumber} — ${groupNames}\n\nThis is Saumya & Mahek calling you to come take a photo with us!\n\nPlease head to the Mandap and queue up on the left side of the Mandap now.\n\nThank you!`;
 
     if (isTestMode) {
       console.log(`[TEST] Would post to WhatsApp group: "${whatsappGroupMessage}"`);
@@ -184,8 +184,8 @@ export async function POST(request: NextRequest) {
         const chatId = `${cleanNumber}@c.us`;
 
         const dmMessage = isResend
-          ? `Hi ${member.name}, this is a friendly reminder from Saumya & Mahek — we're still waiting for you to come take a group photo with us! Please head to the Mandap and queue up on the left side as soon as you can so we can wrap up group photos on time. Thank you! 📸`
-          : `Hi ${member.name}! This is Saumya & Mahek calling you to come take a photo with us! Please head to the Mandap and queue up on the left side of the Mandap now. Thank you! 📸`;
+          ? `Hi ${member.name}, this is a friendly reminder from Saumya & Mahek — we're still waiting for you to come take a group photo with us! Please head to the Mandap and queue up on the left side as soon as you can so we can wrap up group photos on time. Thank you!`
+          : `Hi ${member.name}! This is Saumya & Mahek calling you to come take a photo with us! Please head to the Mandap and queue up on the left side of the Mandap now. Thank you!`;
 
         if (isTestMode) {
           console.log(`[TEST] Would WhatsApp DM ${member.phone} (${chatId}): ${member.name}`);
