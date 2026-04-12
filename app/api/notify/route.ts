@@ -1,28 +1,36 @@
 // app/api/notify/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
-import twilio from 'twilio';
-import { getWhatsAppClient, getWhatsAppStatus } from '@/lib/whatsapp-session';
+import { requireAuth } from '@/lib/require-auth';
 import { escapeHtml } from '@/lib/escape-html';
+import { whenReady } from '@/lib/whatsapp-session';
 import type { NotificationRequest, NotificationResponse } from '@/types';
 
-// Server-side dedup cooldown: Map<groupNumber, lastSentTimestamp>
-// Safe on Hetzner VPS (long-running process); Map persists across requests
+// Server-side dedup: Map<groupNumber, lastSendTimestamp>
+// Safe on Hetzner VPS — long-running process, Map persists across requests
 const lastSentMap = new Map<number, number>();
 const COOLDOWN_MS = 60_000;
 
 export async function POST(request: NextRequest) {
+  // Auth gate — must be first
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body: NotificationRequest = await request.json();
     const { groupNumber, members } = body;
 
-    // Dedup guard: reject if last notification was sent within cooldown window
+    // isResend: true if group has been successfully sent before (Map has entry)
+    const isResend = lastSentMap.has(groupNumber);
+
+    // Server-side dedup: reject if last successful notification was within cooldown window
     const lastSent = lastSentMap.get(groupNumber);
     if (lastSent && Date.now() - lastSent < COOLDOWN_MS) {
+      const waitSec = Math.ceil((COOLDOWN_MS - (Date.now() - lastSent)) / 1000);
       return NextResponse.json(
         {
           success: false,
-          message: `Notification sent too recently. Wait ${Math.ceil((COOLDOWN_MS - (Date.now() - lastSent)) / 1000)} seconds before resending.`,
+          message: `Notification sent too recently. Wait ${waitSec} seconds before resending.`,
         },
         { status: 429 }
       );
@@ -37,12 +45,6 @@ export async function POST(request: NextRequest) {
 
     const isTestMode = process.env.TEST_MODE === 'true';
 
-    // Initialize Twilio client
-    let twilioClient;
-    if (!isTestMode && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-      twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    }
-
     const response: NotificationResponse = {
       success: true,
       message: isTestMode
@@ -52,21 +54,10 @@ export async function POST(request: NextRequest) {
       results: [],
     };
 
-    // isResend is determined by whether the group has been sent within the last 10 minutes.
-    // We don't rely on client-supplied lastNotifiedAt — server-side map is the authority.
-    // For the first call (no lastSent), isResend is false.
-    const isResend = lastSent !== undefined;
-
-    const messageText = (name: string) =>
-      isResend
-        ? `Hi ${name}, this is a friendly reminder from Saumya & Mahek — we're still waiting for you to come take a group photo with us! Please head to the Mandap and queue up on the left side as soon as you can so we can wrap up group photos on time. Thank you!`
-        : `Hi ${name}! This is Saumya & Mahek calling you to come take a photo with us! Please head to the Mandap and queue up on the left side of the Mandap now. Thank you!`;
-
-    // ── Per-member: Email (Gmail SMTP) + SMS (Twilio) ────────────────────────
+    // ── Per-member: Email (Gmail SMTP) ───────────────────────────────────────
     if (isTestMode) {
       for (const member of members) {
         console.log(`[TEST] Would email ${member.email} — Group ${groupNumber}: ${member.name}`);
-        console.log(`[TEST] Would SMS ${member.phone} — Group ${groupNumber}: ${member.name}`);
         response.results!.push({
           member: member.name,
           emailStatus: 'simulated-success',
@@ -87,7 +78,6 @@ export async function POST(request: NextRequest) {
 
       for (const member of members) {
         let emailStatus = 'failed';
-        let smsStatus = 'skipped';
 
         // Send email
         try {
@@ -127,25 +117,10 @@ export async function POST(request: NextRequest) {
           console.error(`[Email] Error for ${member.name}:`, emailError);
         }
 
-        // Send SMS via Twilio
-        if (member.phone && twilioClient) {
-          try {
-            const smsMessage = await twilioClient.messages.create({
-              body: messageText(member.name),
-              from: process.env.TWILIO_PHONE_NUMBER,
-              to: member.phone,
-            });
-            smsStatus = smsMessage.status;
-          } catch (smsError) {
-            console.error(`[SMS] Error for ${member.name}:`, smsError);
-            smsStatus = 'failed';
-          }
-        }
-
         response.results!.push({
           member: member.name,
           emailStatus,
-          whatsappDmStatus: smsStatus,
+          whatsappDmStatus: 'skipped',
         });
       }
     }
@@ -165,68 +140,65 @@ export async function POST(request: NextRequest) {
         console.warn('[WhatsApp] WHATSAPP_GROUP_ID not set — skipping group post');
         response.whatsappGroupStatus = 'skipped';
       } else {
-        const { status } = getWhatsAppStatus();
-        if (status !== 'ready') {
-          console.warn(`[WhatsApp] Client not ready (status: ${status}) — skipping group post`);
-          response.whatsappGroupStatus = 'skipped';
-        } else {
-          try {
-            const client = getWhatsAppClient();
-            await client.sendMessage(whatsappGroupId, whatsappGroupMessage);
-            response.whatsappGroupStatus = 'sent';
-          } catch (whatsappError) {
-            console.error('[WhatsApp] Group post error:', whatsappError);
-            response.whatsappGroupStatus = 'failed';
-          }
+        try {
+          const client = await whenReady();
+          await client.sendMessage(whatsappGroupId, whatsappGroupMessage);
+          response.whatsappGroupStatus = 'sent';
+        } catch (whatsappError) {
+          console.error('[WhatsApp] Group post error:', whatsappError);
+          response.whatsappGroupStatus = 'failed';
         }
       }
     }
 
     // ── WhatsApp Individual DMs (whatsapp-web.js) — best-effort ─────────────
-    const { status: waStatus } = getWhatsAppStatus();
-    if (waStatus === 'ready') {
-      const client = getWhatsAppClient();
-      for (const member of members) {
-        if (!member.phone) continue;
-        const cleanNumber = member.phone.replace(/[^0-9]/g, '');
-        if (!cleanNumber) continue;
-        const chatId = `${cleanNumber}@c.us`;
+    if (!isTestMode) {
+      try {
+        const client = await whenReady();
+        for (const member of members) {
+          if (!member.phone) continue;
+          const cleanNumber = member.phone.replace(/[^0-9]/g, '');
+          if (!cleanNumber) continue;
+          const chatId = `${cleanNumber}@c.us`;
 
-        const dmMessage = isResend
-          ? `Hi ${member.name}, this is a friendly reminder from Saumya & Mahek — we're still waiting for you to come take a group photo with us! Please head to the Mandap and queue up on the left side as soon as you can so we can wrap up group photos on time. Thank you!`
-          : `Hi ${member.name}! This is Saumya & Mahek calling you to come take a photo with us! Please head to the Mandap and queue up on the left side of the Mandap now. Thank you!`;
+          const dmMessage = isResend
+            ? `Hi ${member.name}, this is a friendly reminder from Saumya & Mahek — we're still waiting for you to come take a group photo with us! Please head to the Mandap and queue up on the left side as soon as you can so we can wrap up group photos on time. Thank you!`
+            : `Hi ${member.name}! This is Saumya & Mahek calling you to come take a photo with us! Please head to the Mandap and queue up on the left side of the Mandap now. Thank you!`;
 
-        if (isTestMode) {
-          console.log(`[TEST] Would WhatsApp DM ${member.phone} (${chatId}): ${member.name}`);
-        } else {
           try {
             await client.sendMessage(chatId, dmMessage);
             console.log(`[WhatsApp DM] Sent to ${member.name} (${chatId})`);
+            const memberResult = response.results!.find(r => r.member === member.name);
+            if (memberResult) memberResult.whatsappDmStatus = 'sent';
           } catch (dmError) {
             console.error(`[WhatsApp DM] Error for ${member.name} (${chatId}):`, dmError);
+            const memberResult = response.results!.find(r => r.member === member.name);
+            if (memberResult) memberResult.whatsappDmStatus = 'failed';
           }
         }
+      } catch {
+        console.warn('[WhatsApp DM] Client not ready — skipping individual messages');
       }
-    } else {
-      console.warn(`[WhatsApp DM] Client not ready (status: ${waStatus}) — skipping individual messages`);
     }
-
-    // Record send timestamp for dedup cooldown
-    lastSentMap.set(groupNumber, Date.now());
 
     // Determine overall success: at least one channel must succeed per member
     const anySuccess = response.results!.some(
       (r) => r.emailStatus === 'sent' || r.emailStatus === 'simulated-success' ||
-             r.whatsappDmStatus === 'sent' || r.whatsappDmStatus === 'simulated-success' ||
-             r.whatsappDmStatus === 'queued'
+             r.whatsappDmStatus === 'sent' || r.whatsappDmStatus === 'simulated-success'
     );
+
+    // Record successful send in dedup Map — only after at least one channel succeeded
+    if (anySuccess) {
+      lastSentMap.set(groupNumber, Date.now());
+    }
+
     if (!anySuccess) {
       response.success = false;
       response.message = 'All notifications failed';
     } else {
       const emailCount = response.results!.filter((r) => r.emailStatus === 'sent' || r.emailStatus === 'simulated-success').length;
-      const whatsappDmCount = response.results!.filter((r) => ['sent', 'queued', 'simulated-success'].includes(r.whatsappDmStatus)).length;
-      response.message = `Sent to ${members.length} member(s): ${emailCount} emails, ${whatsappDmCount} WhatsApp DMs`;
+      const dmCount = response.results!.filter((r) => r.whatsappDmStatus === 'sent' || r.whatsappDmStatus === 'simulated-success').length;
+      response.message = `Sent to ${members.length} member(s): ${emailCount} emails, ${dmCount} WhatsApp DMs`;
     }
 
     return NextResponse.json(response);
