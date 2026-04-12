@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import GroupCard from '@/components/GroupCard';
@@ -322,12 +323,20 @@ export default function Home() {
               </h1>
               <p className="text-sm md:text-base text-gray-600">Mahek &amp; Saumya&apos;s Wedding</p>
             </div>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 active:bg-gray-400 transition-colors"
-            >
-              Logout
-            </button>
+            <div className="flex gap-2 flex-shrink-0">
+              <Link
+                href="/guests"
+                className="px-4 py-2.5 text-sm bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors whitespace-nowrap"
+              >
+                Guests
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 active:bg-gray-400 transition-colors"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
 
