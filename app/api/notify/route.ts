@@ -173,6 +173,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ── WhatsApp Individual DMs (whatsapp-web.js) — best-effort ─────────────
+    const { status: waStatus } = getWhatsAppStatus();
+    if (waStatus === 'ready') {
+      const client = getWhatsAppClient();
+      for (const member of members) {
+        if (!member.phone) continue;
+        const cleanNumber = member.phone.replace(/[^0-9]/g, '');
+        if (!cleanNumber) continue;
+        const chatId = `${cleanNumber}@c.us`;
+
+        const dmMessage = isResend
+          ? `Hi ${member.name}, this is a friendly reminder that your group photo with Mahek & Saumya is still pending. Please head to the Mandap at your earliest convenience so we can wrap up group photos on time. Thank you! 📸`
+          : `Hi ${member.name}! It's time for your group photo with Mahek & Saumya! 📸 Please head to the Mandap now. Thank you!`;
+
+        if (isTestMode) {
+          console.log(`[TEST] Would WhatsApp DM ${member.phone} (${chatId}): ${member.name}`);
+        } else {
+          try {
+            await client.sendMessage(chatId, dmMessage);
+            console.log(`[WhatsApp DM] Sent to ${member.name} (${chatId})`);
+          } catch (dmError) {
+            console.error(`[WhatsApp DM] Error for ${member.name} (${chatId}):`, dmError);
+          }
+        }
+      }
+    } else {
+      console.warn(`[WhatsApp DM] Client not ready (status: ${waStatus}) — skipping individual messages`);
+    }
+
     // Determine overall success: at least one channel must succeed per member
     const anySuccess = response.results!.some(
       (r) => r.emailStatus === 'sent' || r.emailStatus === 'simulated-success' ||
