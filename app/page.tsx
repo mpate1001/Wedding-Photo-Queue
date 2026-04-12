@@ -311,171 +311,177 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 pb-8">
+      <div className="max-w-7xl mx-auto px-4">
+        {/* Header — sticky on mobile for quick access */}
+        <div className="sticky top-0 z-10 bg-gray-50 pt-4 pb-3 -mx-4 px-4 border-b border-gray-200 md:border-b-0 md:static md:pt-8 md:pb-0">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl md:text-4xl font-bold text-gray-900">
+                Photo Queue
+              </h1>
+              <p className="text-sm md:text-base text-gray-600">Mahek &amp; Saumya&apos;s Wedding</p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 active:bg-gray-400 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+
         {/* Test Mode Banner */}
         {testMode && (
-          <div className="mb-6 bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4">
+          <div className="mt-4 mb-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg p-3">
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold">TEST</span>
+              <span className="text-xl font-bold">TEST</span>
               <div>
-                <p className="font-bold text-yellow-900">TEST MODE ACTIVE</p>
-                <p className="text-sm text-yellow-800">
-                  Notifications will be simulated - no SMS/WhatsApp/Email will be sent. No credits will be used.
+                <p className="font-bold text-yellow-900 text-sm">TEST MODE ACTIVE</p>
+                <p className="text-xs text-yellow-800">
+                  Notifications will be simulated - no real sends.
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        <div className="mb-8 flex justify-between items-start">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              Wedding Photo Queue
-            </h1>
-            <p className="text-gray-600">Mahek &amp; Saumya&apos;s Wedding</p>
+        {/* Stats — 3 columns on mobile, 6 on desktop */}
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-4 mt-4 mb-4">
+          <div className="bg-white rounded-lg p-3 md:p-4 shadow">
+            <p className="text-xs md:text-sm text-gray-600">Total</p>
+            <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.total}</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
-          >
-            Logout
-          </button>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
-          <div className="bg-white rounded-lg p-4 shadow">
-            <p className="text-sm text-gray-600">Total Groups</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+          <div className="bg-white rounded-lg p-3 md:p-4 shadow">
+            <p className="text-xs md:text-sm text-gray-600">Waiting</p>
+            <p className="text-xl md:text-2xl font-bold text-gray-600">{stats.waiting}</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow">
-            <p className="text-sm text-gray-600">Waiting</p>
-            <p className="text-2xl font-bold text-gray-600">{stats.waiting}</p>
+          <div className="bg-white rounded-lg p-3 md:p-4 shadow">
+            <p className="text-xs md:text-sm text-gray-600">Queued</p>
+            <p className="text-xl md:text-2xl font-bold text-blue-600">{stats.queued}</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow">
-            <p className="text-sm text-gray-600">Queued</p>
-            <p className="text-2xl font-bold text-blue-600">{stats.queued}</p>
+          <div className="bg-white rounded-lg p-3 md:p-4 shadow">
+            <p className="text-xs md:text-sm text-gray-600">Notified</p>
+            <p className="text-xl md:text-2xl font-bold text-yellow-600">{stats.notified}</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow">
-            <p className="text-sm text-gray-600">Notified</p>
-            <p className="text-2xl font-bold text-yellow-600">{stats.notified}</p>
+          <div className="bg-white rounded-lg p-3 md:p-4 shadow">
+            <p className="text-xs md:text-sm text-gray-600">Arrived</p>
+            <p className="text-xl md:text-2xl font-bold text-purple-600">{stats.arrived}</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow">
-            <p className="text-sm text-gray-600">Arrived</p>
-            <p className="text-2xl font-bold text-purple-600">{stats.arrived}</p>
-          </div>
-          <div className="bg-white rounded-lg p-4 shadow">
-            <p className="text-sm text-gray-600">Completed</p>
-            <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+          <div className="bg-white rounded-lg p-3 md:p-4 shadow">
+            <p className="text-xs md:text-sm text-gray-600">Done</p>
+            <p className="text-xl md:text-2xl font-bold text-green-600">{stats.completed}</p>
           </div>
         </div>
 
         {/* Bulk Actions */}
         {selectedGroups.size > 0 && (
-          <div className="mb-4 bg-indigo-50 border-2 border-indigo-300 rounded-lg p-4">
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div className="flex items-center gap-3">
-                <p className="font-semibold text-indigo-900">
+          <div className="mb-3 bg-indigo-50 border-2 border-indigo-300 rounded-lg p-3 md:p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <p className="font-semibold text-indigo-900 text-sm md:text-base truncate">
                   {selectedGroups.size} group{selectedGroups.size !== 1 ? 's' : ''} selected
                 </p>
                 <button
                   onClick={handleDeselectAll}
-                  className="text-sm text-indigo-700 hover:text-indigo-900 underline"
+                  className="text-sm text-indigo-700 hover:text-indigo-900 underline whitespace-nowrap"
                 >
-                  Clear selection
+                  Clear
                 </button>
               </div>
               <button
                 onClick={handleBulkNotify}
                 disabled={bulkNotifying}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors"
+                className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors whitespace-nowrap text-sm md:text-base"
               >
-                {bulkNotifying ? 'Sending...' : `Notify ${selectedGroups.size} Group${selectedGroups.size !== 1 ? 's' : ''}`}
+                {bulkNotifying ? 'Sending...' : `Notify ${selectedGroups.size}`}
               </button>
             </div>
           </div>
         )}
 
-        {/* Filter & Refresh */}
-        <div className="flex flex-wrap gap-3 mb-6">
-          <button
-            onClick={() => setFilterStatus('all')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              filterStatus === 'all'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            All Groups ({stats.total})
-          </button>
-          <button
-            onClick={() => setFilterStatus('waiting')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              filterStatus === 'waiting'
-                ? 'bg-gray-600 text-white'
-                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            Waiting ({stats.waiting})
-          </button>
-          <button
-            onClick={() => setFilterStatus('queued')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              filterStatus === 'queued'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            Queued ({stats.queued})
-          </button>
-          <button
-            onClick={() => setFilterStatus('notified')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              filterStatus === 'notified'
-                ? 'bg-yellow-600 text-white'
-                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            Notified ({stats.notified})
-          </button>
-          <button
-            onClick={() => setFilterStatus('arrived')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              filterStatus === 'arrived'
-                ? 'bg-purple-600 text-white'
-                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            Arrived ({stats.arrived})
-          </button>
-          <button
-            onClick={() => setFilterStatus('completed')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              filterStatus === 'completed'
-                ? 'bg-green-600 text-white'
-                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            Completed ({stats.completed})
-          </button>
-          <div className="flex-grow"></div>
-          <button
-            onClick={handleSelectAll}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 font-medium transition-colors"
-          >
-            Select All ({filteredGroups.length})
-          </button>
-          <button
-            onClick={() => refetch()}
-            className="px-4 py-2 bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-md hover:bg-indigo-200 font-medium transition-colors"
-          >
-            Refresh
-          </button>
+        {/* Filter — horizontal scroll on mobile, wrap on desktop */}
+        <div className="mb-4">
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible md:pb-0 scrollbar-hide">
+            <button
+              onClick={() => setFilterStatus('all')}
+              className={`px-3.5 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap text-sm min-h-[44px] ${
+                filterStatus === 'all'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+              }`}
+            >
+              All ({stats.total})
+            </button>
+            <button
+              onClick={() => setFilterStatus('waiting')}
+              className={`px-3.5 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap text-sm min-h-[44px] ${
+                filterStatus === 'waiting'
+                  ? 'bg-gray-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+              }`}
+            >
+              Waiting ({stats.waiting})
+            </button>
+            <button
+              onClick={() => setFilterStatus('queued')}
+              className={`px-3.5 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap text-sm min-h-[44px] ${
+                filterStatus === 'queued'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+              }`}
+            >
+              Queued ({stats.queued})
+            </button>
+            <button
+              onClick={() => setFilterStatus('notified')}
+              className={`px-3.5 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap text-sm min-h-[44px] ${
+                filterStatus === 'notified'
+                  ? 'bg-yellow-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+              }`}
+            >
+              Notified ({stats.notified})
+            </button>
+            <button
+              onClick={() => setFilterStatus('arrived')}
+              className={`px-3.5 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap text-sm min-h-[44px] ${
+                filterStatus === 'arrived'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+              }`}
+            >
+              Arrived ({stats.arrived})
+            </button>
+            <button
+              onClick={() => setFilterStatus('completed')}
+              className={`px-3.5 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap text-sm min-h-[44px] ${
+                filterStatus === 'completed'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+              }`}
+            >
+              Done ({stats.completed})
+            </button>
+          </div>
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={handleSelectAll}
+              className="px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 font-medium transition-colors text-sm min-h-[44px]"
+            >
+              Select All ({filteredGroups.length})
+            </button>
+            <button
+              onClick={() => refetch()}
+              className="px-3.5 py-2.5 bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-lg hover:bg-indigo-200 active:bg-indigo-300 font-medium transition-colors text-sm min-h-[44px]"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Groups Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           {filteredGroups.map((group) => (
             <GroupCard
               key={group.groupNumber}

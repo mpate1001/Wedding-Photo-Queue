@@ -43,19 +43,21 @@ export default function GroupCard({
 }: GroupCardProps) {
   return (
     <div
-      className={`border-2 rounded-lg p-4 ${statusColors[group.status]} ${
+      className={`border-2 rounded-lg p-3 md:p-4 ${statusColors[group.status]} ${
         isSelected ? 'ring-4 ring-indigo-500' : ''
       } transition-all`}
     >
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex items-start gap-3">
+      <div className="flex justify-between items-center mb-3">
+        <div className="flex items-center gap-3">
           {onSelect && (
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={(e) => onSelect(group.groupNumber, e.target.checked)}
-              className="mt-1 h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
+            <label className="flex items-center justify-center w-11 h-11 -m-1 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={(e) => onSelect(group.groupNumber, e.target.checked)}
+                className="h-6 w-6 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+            </label>
           )}
           <div>
             <h3 className="text-lg font-bold">Group {group.groupNumber}</h3>
@@ -64,27 +66,27 @@ export default function GroupCard({
             </p>
           </div>
         </div>
-        <span className="text-xs font-semibold px-2 py-1 rounded-full bg-white/50">
+        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white/50">
           {statusLabels[group.status]}
         </span>
       </div>
 
-      <div className="text-sm space-y-2 mb-3 max-h-40 overflow-y-auto">
+      <div className="text-sm space-y-2 mb-3 max-h-48 md:max-h-40 overflow-y-auto">
         {group.members.map((member, index) => (
           <div key={index} className="border-b border-gray-300/30 pb-2 last:border-b-0">
             <p className="font-semibold">{member.name}</p>
-            <p className="text-xs">📱 {member.phone}</p>
-            <p className="text-xs">📧 {member.email}</p>
+            <p className="text-xs text-gray-700">{member.phone}</p>
+            <p className="text-xs text-gray-700">{member.email}</p>
           </div>
         ))}
       </div>
 
-      <div className="flex gap-2 flex-wrap">
-        {/* Status dropdown stays as a safety escape hatch for any transition */}
+      <div className="flex gap-2 items-stretch">
+        {/* Status dropdown — escape hatch for any transition */}
         <select
           value={group.status}
           onChange={(e) => onStatusChange(group.groupNumber, e.target.value as QueueStatus)}
-          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white min-w-0"
+          className="flex-1 px-3 py-2.5 text-sm border border-gray-300 rounded-lg bg-white min-w-0 min-h-[44px]"
         >
           <option value="waiting">Waiting</option>
           <option value="queued">Queued</option>
@@ -93,11 +95,11 @@ export default function GroupCard({
           <option value="completed">Completed</option>
         </select>
 
-        {/* Primary action buttons — status-aware to guide the coordinator */}
+        {/* Primary action buttons — touch-friendly 44px min */}
         {group.status === 'waiting' && (
           <button
             onClick={() => onStatusChange(group.groupNumber, 'queued')}
-            className="px-3 py-2 text-sm font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            className="px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 active:bg-blue-800 min-h-[44px]"
           >
             Queue
           </button>
@@ -106,7 +108,7 @@ export default function GroupCard({
           <button
             onClick={() => onNotify(group)}
             disabled={isNotifying}
-            className="px-3 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-gray-400 disabled:cursor-not-allowed min-h-[44px]"
           >
             {isNotifying ? '...' : 'Notify'}
           </button>
@@ -115,14 +117,14 @@ export default function GroupCard({
           <>
             <button
               onClick={() => onStatusChange(group.groupNumber, 'arrived')}
-              className="px-3 py-2 text-sm font-semibold text-white bg-purple-600 rounded-md hover:bg-purple-700"
+              className="px-4 py-2.5 text-sm font-semibold text-white bg-purple-600 rounded-lg hover:bg-purple-700 active:bg-purple-800 min-h-[44px]"
             >
               Arrived
             </button>
             <button
               onClick={() => onNotify(group)}
               disabled={isNotifying}
-              className="px-3 py-2 text-sm font-semibold text-white bg-yellow-600 rounded-md hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-4 py-2.5 text-sm font-semibold text-white bg-yellow-600 rounded-lg hover:bg-yellow-700 active:bg-yellow-800 disabled:bg-gray-400 disabled:cursor-not-allowed min-h-[44px]"
             >
               {isNotifying ? '...' : 'Resend'}
             </button>
@@ -131,9 +133,9 @@ export default function GroupCard({
         {group.status === 'arrived' && (
           <button
             onClick={() => onStatusChange(group.groupNumber, 'completed')}
-            className="px-3 py-2 text-sm font-semibold text-white bg-green-600 rounded-md hover:bg-green-700"
+            className="px-4 py-2.5 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 active:bg-green-800 min-h-[44px]"
           >
-            Complete
+            Done
           </button>
         )}
       </div>
