@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/require-auth';
 import { whenReady } from '@/lib/whatsapp-session';
 import { diffGuestsAgainstParticipants, type SheetGuest, type GroupParticipant } from '@/lib/guest-diff';
 import { normalizePhone } from '@/lib/phone-match';
+import { fetchGroupsFromSheet } from '@/lib/sheets';
 
 type GroupType = 'announcements' | 'photo';
 type Channel = 'email' | 'whatsapp' | 'both';
@@ -14,12 +15,9 @@ interface InviteBody {
   channel: Channel;
 }
 
-async function fetchAllGuests(request: NextRequest): Promise<SheetGuest[]> {
-  const origin = new URL(request.url).origin;
-  const res = await fetch(`${origin}/api/groups`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Failed to fetch guests');
-  const data = await res.json() as { groups: Array<{ members: SheetGuest[] }> };
-  return data.groups.flatMap((g) => g.members);
+async function fetchAllGuests(): Promise<SheetGuest[]> {
+  const groups = await fetchGroupsFromSheet();
+  return groups.flatMap((g) => g.members);
 }
 
 export async function POST(request: NextRequest) {
@@ -63,7 +61,7 @@ export async function POST(request: NextRequest) {
     const inviteLink = `https://chat.whatsapp.com/${inviteCode}`;
 
     // 2. Find missing guests
-    const allGuests = await fetchAllGuests(request);
+    const allGuests = await fetchAllGuests();
     const participants: GroupParticipant[] = (groupChat.participants ?? []).map(
       (p: { id: { user: string } }) => ({ phone: `+${p.id.user}` })
     );

@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/require-auth';
 import { whenReady } from '@/lib/whatsapp-session';
 import { diffGuestsAgainstParticipants, type SheetGuest, type GroupParticipant } from '@/lib/guest-diff';
 import { readBatchState } from '@/lib/batch-state';
+import { fetchGroupsFromSheet } from '@/lib/sheets';
 
 // Simple in-memory cache for WhatsApp participant list — 60s TTL
 const participantCache = new Map<string, { at: number; participants: GroupParticipant[] }>();
@@ -13,15 +14,12 @@ interface SheetGuestWithGroupNumber extends SheetGuest {
   groupNumber: number;
 }
 
-async function fetchSheetGuests(request: NextRequest): Promise<SheetGuestWithGroupNumber[]> {
-  // Reuse the existing /api/groups route — it already parses CSV into groups with members.
-  // Flatten to a single guest list.
-  const origin = new URL(request.url).origin;
-  const res = await fetch(`${origin}/api/groups`, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`Failed to fetch guests from Google Sheets (status ${res.status})`);
-  const data = await res.json() as { groups: Array<{ groupNumber: number; members: SheetGuest[] }> };
+async function fetchSheetGuests(): Promise<SheetGuestWithGroupNumber[]> {
+  // Call the shared lib directly — avoids internal HTTP round-trip
+  // (which breaks on VPS due to nginx SSL termination mismatches)
+  const groups = await fetchGroupsFromSheet();
   const guests: SheetGuestWithGroupNumber[] = [];
-  for (const group of data.groups) {
+  for (const group of groups) {
     for (const member of group.members) {
       guests.push({ ...member, groupNumber: group.groupNumber });
     }
@@ -61,7 +59,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const guests = await fetchSheetGuests(request);
+    const guests = await fetchSheetGuests();
 
     // Fetch participants from both groups (skip if env var not set)
     const [announcementsParticipants, photoParticipants] = await Promise.all([
