@@ -4,27 +4,15 @@ import { requireAuth } from '@/lib/require-auth';
 import { whenReady } from '@/lib/whatsapp-session';
 import { diffGuestsAgainstParticipants, type SheetGuest, type GroupParticipant } from '@/lib/guest-diff';
 import { readBatchState } from '@/lib/batch-state';
-import { fetchGroupsFromSheet } from '@/lib/sheets';
+import { fetchFinalGuestList } from '@/lib/sheets';
 
 // Simple in-memory cache for WhatsApp participant list — 60s TTL
 const participantCache = new Map<string, { at: number; participants: GroupParticipant[] }>();
 const CACHE_TTL_MS = 60_000;
 
-interface SheetGuestWithGroupNumber extends SheetGuest {
-  groupNumber: number;
-}
-
-async function fetchSheetGuests(): Promise<SheetGuestWithGroupNumber[]> {
-  // Call the shared lib directly — avoids internal HTTP round-trip
-  // (which breaks on VPS due to nginx SSL termination mismatches)
-  const groups = await fetchGroupsFromSheet();
-  const guests: SheetGuestWithGroupNumber[] = [];
-  for (const group of groups) {
-    for (const member of group.members) {
-      guests.push({ ...member, groupNumber: group.groupNumber });
-    }
-  }
-  return guests;
+async function fetchSheetGuests(): Promise<SheetGuest[]> {
+  // Final wedding guest list (separate sheet from the photo queue)
+  return fetchFinalGuestList();
 }
 
 async function fetchGroupParticipants(groupId: string): Promise<GroupParticipant[]> {

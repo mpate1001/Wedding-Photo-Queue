@@ -5,7 +5,7 @@ import { requireAuth } from '@/lib/require-auth';
 import { whenReady } from '@/lib/whatsapp-session';
 import { diffGuestsAgainstParticipants, type SheetGuest, type GroupParticipant } from '@/lib/guest-diff';
 import { normalizePhone } from '@/lib/phone-match';
-import { fetchGroupsFromSheet } from '@/lib/sheets';
+import { fetchFinalGuestList } from '@/lib/sheets';
 
 type GroupType = 'announcements' | 'photo';
 type Channel = 'email' | 'whatsapp' | 'both';
@@ -16,8 +16,7 @@ interface InviteBody {
 }
 
 async function fetchAllGuests(): Promise<SheetGuest[]> {
-  const groups = await fetchGroupsFromSheet();
-  return groups.flatMap((g) => g.members);
+  return fetchFinalGuestList();
 }
 
 export async function POST(request: NextRequest) {

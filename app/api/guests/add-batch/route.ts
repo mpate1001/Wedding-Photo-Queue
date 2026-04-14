@@ -5,7 +5,7 @@ import { whenReady } from '@/lib/whatsapp-session';
 import { diffGuestsAgainstParticipants, type SheetGuest, type GroupParticipant } from '@/lib/guest-diff';
 import { readBatchState, recordBatchRun, ranWithinCooldown, type GroupType } from '@/lib/batch-state';
 import { normalizePhone } from '@/lib/phone-match';
-import { fetchGroupsFromSheet } from '@/lib/sheets';
+import { fetchFinalGuestList } from '@/lib/sheets';
 
 interface AddBatchBody {
   groupType: GroupType;
@@ -21,8 +21,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 async function fetchAllGuests(): Promise<SheetGuest[]> {
-  const groups = await fetchGroupsFromSheet();
-  return groups.flatMap((g) => g.members);
+  return fetchFinalGuestList();
 }
 
 export async function POST(request: NextRequest) {
