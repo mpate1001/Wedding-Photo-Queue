@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
     const missing = diff.filter((d) => d.status === 'missing').slice(0, batchSize);
 
     let added = 0;
+    let invited = 0;
     let failed = 0;
 
     for (const { guest } of missing) {
@@ -91,11 +92,35 @@ export async function POST(request: NextRequest) {
       const contactId = `${raw}@c.us`;
 
       try {
-        await groupChat.addParticipants([contactId]);
-        console.log(`[add-batch] added ${guest.name} (${contactId}) to ${groupType}`);
-        added += 1;
+        // whatsapp-web.js returns a per-contact result object:
+        //   { [contactId]: { code, message, isInviteV4Sent } }
+        //   code 200 = added directly; 403 = privacy blocked (invite DM sent if isInviteV4Sent);
+        //   408 = recently left; 409 = already in group; 500 = unknown error.
+        const result = await groupChat.addParticipants([contactId]);
+        const entry = result && typeof result === 'object' ? result[contactId] : undefined;
+        const code = entry?.code;
+        const message = entry?.message;
+        const inviteSent = entry?.isInviteV4Sent === true;
+
+        if (code === 200) {
+          console.log(`[add-batch] added ${guest.name} (${contactId}) to ${groupType}`);
+          added += 1;
+        } else if (inviteSent || code === 403) {
+          console.log(
+            `[add-batch] invite-sent ${guest.name} (${contactId}) to ${groupType} — code=${code} msg=${message}`
+          );
+          invited += 1;
+        } else if (code === 409) {
+          console.log(`[add-batch] already-in ${guest.name} (${contactId}) in ${groupType}`);
+          added += 1;
+        } else {
+          console.error(
+            `[add-batch] not-added ${guest.name} (${contactId}) — code=${code} msg=${message} raw=${JSON.stringify(entry)}`
+          );
+          failed += 1;
+        }
       } catch (err) {
-        console.error(`[add-batch] failed to add ${guest.name}:`, err);
+        console.error(`[add-batch] threw for ${guest.name}:`, err);
         failed += 1;
       }
 
@@ -103,11 +128,12 @@ export async function POST(request: NextRequest) {
       await sleep(DELAY_BETWEEN_ADDS_MS);
     }
 
-    const remaining = diff.filter((d) => d.status === 'missing').length - added;
-    const newState = await recordBatchRun(groupType, added, failed);
+    const remaining = diff.filter((d) => d.status === 'missing').length - (added + invited);
+    const newState = await recordBatchRun(groupType, added + invited, failed);
 
     return NextResponse.json({
       added,
+      invited,
       failed,
       remaining: Math.max(0, remaining),
       lastRun: newState[groupType].lastRunAt,
