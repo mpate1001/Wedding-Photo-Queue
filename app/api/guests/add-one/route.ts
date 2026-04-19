@@ -58,18 +58,39 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const groupChat = chat as any;
 
-    const result = await groupChat.addParticipants([contactId]);
+    // Pre-resolve: WhatsApp requires the contact's LID cached in its local chat
+    // table before addParticipants works. Without this, the library throws
+    // "Lid is missing in chat table". getNumberId forces number resolution;
+    // getChatById populates the chat table entry.
+    const numberId = await client.getNumberId(raw);
+    if (!numberId) {
+      console.log(`[add-one] not-on-whatsapp ${contactId}`);
+      return NextResponse.json({
+        success: false,
+        outcome: 'not-on-whatsapp' as AddOutcome,
+        message: 'Phone number is not registered on WhatsApp',
+      });
+    }
+    const resolvedId = numberId._serialized;
+    try {
+      await client.getChatById(resolvedId);
+    } catch (resolveErr) {
+      console.warn(`[add-one] pre-resolve getChatById failed for ${resolvedId}:`, resolveErr);
+    }
+
+    const result = await groupChat.addParticipants([resolvedId]);
 
     // Library returns a plain string for group-level errors (not admin, empty group).
     if (typeof result === 'string') {
-      console.error(`[add-one] group-level error for ${contactId}: ${result}`);
+      console.error(`[add-one] group-level error for ${resolvedId}: ${result}`);
       return NextResponse.json(
         { success: false, outcome: 'failed' as AddOutcome, message: result },
         { status: 500 }
       );
     }
 
-    const entry = result && typeof result === 'object' ? result[contactId] : undefined;
+    // Result is keyed by the _serialized Wid we passed in (resolvedId).
+    const entry = result && typeof result === 'object' ? result[resolvedId] : undefined;
     const code = entry?.code;
     const message = entry?.message;
     const inviteSent = entry?.isInviteV4Sent === true;
@@ -88,7 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(
-      `[add-one] ${outcome} ${contactId} in ${groupType} — code=${code} msg=${message}`
+      `[add-one] ${outcome} ${resolvedId} in ${groupType} — code=${code} msg=${message}`
     );
 
     return NextResponse.json({
