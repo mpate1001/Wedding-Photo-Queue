@@ -12,7 +12,7 @@ A password-protected web application to manage group photo queuing for Mahek & S
 - 📲 **Triple notification redundancy**: SMS + WhatsApp + Email sent simultaneously
 - 👥 **Multi-member groups**: Multiple people per group number
 - 🔢 **Auto phone formatting**: Adds +1 prefix to US numbers
-- 📱 **Mobile-responsive design**: Works on phones and tablets
+- **Mobile-responsive design**: Works on phones and tablets
 
 ### Queue Management
 - **4 status levels**: Waiting → Queued → Notified → Completed
@@ -99,11 +99,11 @@ Visit `http://localhost:3000` and login with your password.
 
 Your spreadsheet should have these columns (with header row):
 
-| Group Number | Name | Phone | Email |
-|--------------|------|-------|-------|
-| 1 | John Smith | 2025551234 | john@example.com |
-| 1 | Jane Smith | 2025555678 | jane@example.com |
-| 2 | Bob Jones | 2025559012 | bob@example.com |
+| Group Number | Name       | Phone      | Email            |
+|--------------|------------|------------|------------------|
+| 1            | John Smith | 2025551234 | john@example.com |
+| 1            | Jane Smith | 2025555678 | jane@example.com |
+| 2            | Bob Jones  | 2025559012 | bob@example.com  |
 
 **Note:** Phone numbers will auto-format with +1 prefix. Multiple rows with same group number = multiple members.
 

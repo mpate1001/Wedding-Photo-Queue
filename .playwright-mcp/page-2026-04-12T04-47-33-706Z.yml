@@ -1,0 +1,19 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - heading "Wedding Photo Queue" [level=1] [ref=e6]
+      - paragraph [ref=e7]: Mahek & Saumya's Wedding
+      - paragraph [ref=e8]: May 24th, 2026
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]: Enter Password
+        - textbox "Enter Password" [ref=e12]:
+          - /placeholder: Enter your password
+          - text: saumya2026
+      - paragraph [ref=e26]: Incorrect password. Please try again.
+      - button "Login" [ref=e13]
+    - paragraph [ref=e14]: 🔒 This dashboard is password protected
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e21] [cursor=pointer]:
+    - img [ref=e22]
+  - alert [ref=e15]
