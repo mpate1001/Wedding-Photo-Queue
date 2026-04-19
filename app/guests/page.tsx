@@ -36,6 +36,7 @@ export default function GuestsPage() {
   const [inviteChannel, setInviteChannel] = useState<'email' | 'whatsapp' | 'both'>('both');
   const [inviteSending, setInviteSending] = useState(false);
   const [batchRunning, setBatchRunning] = useState(false);
+  const [addingPhone, setAddingPhone] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('wedding_auth');
@@ -136,6 +137,37 @@ export default function GuestsPage() {
       console.error(err);
     } finally {
       setBatchRunning(false);
+    }
+  };
+
+  const handleAddOne = async (guest: GuestRow) => {
+    setAddingPhone(guest.phone);
+    try {
+      const res = await fetch('/api/guests/add-one', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ groupType: activeGroup, phone: guest.phone }),
+      });
+      const result = await res.json();
+      if (result.outcome === 'added') {
+        toast.success(`${guest.name} added to ${activeGroup}`);
+        refetch();
+      } else if (result.outcome === 'invited') {
+        toast.info(`${guest.name}: invite DM sent (privacy-blocked)`);
+        refetch();
+      } else if (result.outcome === 'already-in') {
+        toast.info(`${guest.name} is already in the group`);
+        refetch();
+      } else if (result.outcome === 'not-on-whatsapp') {
+        toast.warning(`${guest.name} is not on WhatsApp`);
+      } else {
+        toast.error(`${guest.name}: ${result.message ?? 'add failed'}`);
+      }
+    } catch (err) {
+      toast.error(`Add request failed for ${guest.name}`);
+      console.error(err);
+    } finally {
+      setAddingPhone(null);
     }
   };
 
@@ -286,7 +318,13 @@ export default function GuestsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredGuests.map((guest, idx) => (
-            <GuestCard key={`${guest.phone}-${idx}`} guest={guest} activeGroup={activeGroup} />
+            <GuestCard
+              key={`${guest.phone}-${idx}`}
+              guest={guest}
+              activeGroup={activeGroup}
+              onAdd={handleAddOne}
+              adding={addingPhone === guest.phone}
+            />
           ))}
         </div>
 
