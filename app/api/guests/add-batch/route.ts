@@ -92,11 +92,25 @@ export async function POST(request: NextRequest) {
       const contactId = `${raw}@c.us`;
 
       try {
-        // whatsapp-web.js returns a per-contact result object:
-        //   { [contactId]: { code, message, isInviteV4Sent } }
-        //   code 200 = added directly; 403 = privacy blocked (invite DM sent if isInviteV4Sent);
-        //   408 = recently left; 409 = already in group; 500 = unknown error.
+        // whatsapp-web.js returns either:
+        //   - object: { [contactId]: { code, message, isInviteV4Sent } } for per-contact results
+        //   - string: a group-level error message (e.g. bot is not admin, empty group)
+        // Codes: 200 added, 403 privacy-blocked (invite DM sent if isInviteV4Sent),
+        //        404 not on WhatsApp, 408 recently left, 409 already in, 417/419 community/full.
         const result = await groupChat.addParticipants([contactId]);
+
+        if (typeof result === 'string') {
+          console.error(`[add-batch] group-level error: ${result} — aborting remaining adds`);
+          failed += missing.length - (added + invited + failed);
+          return NextResponse.json({
+            success: false,
+            message: result,
+            added,
+            invited,
+            failed,
+          }, { status: 500 });
+        }
+
         const entry = result && typeof result === 'object' ? result[contactId] : undefined;
         const code = entry?.code;
         const message = entry?.message;
