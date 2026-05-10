@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/require-auth';
 import { whenReady } from '@/lib/whatsapp-session';
 import { normalizePhone } from '@/lib/phone-match';
+import { resolveLidForAdd } from '@/lib/resolve-lid';
 import type { GroupType } from '@/lib/batch-state';
 
 interface AddOneBody {
@@ -58,24 +59,15 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const groupChat = chat as any;
 
-    // Pre-resolve: WhatsApp requires the contact's LID cached in its local chat
-    // table before addParticipants works. Without this, the library throws
-    // "Lid is missing in chat table". getNumberId forces number resolution;
-    // getChatById populates the chat table entry.
-    const numberId = await client.getNumberId(raw);
-    if (!numberId) {
+    // Resolve LID for addParticipants — see lib/resolve-lid.ts for why
+    const resolvedId = await resolveLidForAdd(client, raw);
+    if (!resolvedId) {
       console.log(`[add-one] not-on-whatsapp ${contactId}`);
       return NextResponse.json({
         success: false,
         outcome: 'not-on-whatsapp' as AddOutcome,
         message: 'Phone number is not registered on WhatsApp',
       });
-    }
-    const resolvedId = numberId._serialized;
-    try {
-      await client.getChatById(resolvedId);
-    } catch (resolveErr) {
-      console.warn(`[add-one] pre-resolve getChatById failed for ${resolvedId}:`, resolveErr);
     }
 
     const result = await groupChat.addParticipants([resolvedId]);

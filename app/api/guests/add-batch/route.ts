@@ -6,6 +6,7 @@ import { diffGuestsAgainstParticipants, type SheetGuest, type GroupParticipant }
 import { readBatchState, recordBatchRun, ranWithinCooldown, type GroupType } from '@/lib/batch-state';
 import { normalizePhone } from '@/lib/phone-match';
 import { fetchFinalGuestList } from '@/lib/sheets';
+import { resolveLidForAdd } from '@/lib/resolve-lid';
 
 interface AddBatchBody {
   groupType: GroupType;
@@ -89,15 +90,21 @@ export async function POST(request: NextRequest) {
         continue;
       }
       const raw = guest.phone.replace(/\D/g, '');
-      const contactId = `${raw}@c.us`;
 
       try {
+        const resolvedId = await resolveLidForAdd(client, raw);
+        if (!resolvedId) {
+          console.log(`[add-batch] not-on-whatsapp ${guest.name} (${raw})`);
+          failed += 1;
+          await sleep(DELAY_BETWEEN_ADDS_MS);
+          continue;
+        }
         // whatsapp-web.js returns either:
-        //   - object: { [contactId]: { code, message, isInviteV4Sent } } for per-contact results
+        //   - object: { [resolvedId]: { code, message, isInviteV4Sent } } for per-contact results
         //   - string: a group-level error message (e.g. bot is not admin, empty group)
         // Codes: 200 added, 403 privacy-blocked (invite DM sent if isInviteV4Sent),
         //        404 not on WhatsApp, 408 recently left, 409 already in, 417/419 community/full.
-        const result = await groupChat.addParticipants([contactId]);
+        const result = await groupChat.addParticipants([resolvedId]);
 
         if (typeof result === 'string') {
           console.error(`[add-batch] group-level error: ${result} — aborting remaining adds`);
@@ -111,25 +118,25 @@ export async function POST(request: NextRequest) {
           }, { status: 500 });
         }
 
-        const entry = result && typeof result === 'object' ? result[contactId] : undefined;
+        const entry = result && typeof result === 'object' ? result[resolvedId] : undefined;
         const code = entry?.code;
         const message = entry?.message;
         const inviteSent = entry?.isInviteV4Sent === true;
 
         if (code === 200) {
-          console.log(`[add-batch] added ${guest.name} (${contactId}) to ${groupType}`);
+          console.log(`[add-batch] added ${guest.name} (${resolvedId}) to ${groupType}`);
           added += 1;
         } else if (inviteSent || code === 403) {
           console.log(
-            `[add-batch] invite-sent ${guest.name} (${contactId}) to ${groupType} — code=${code} msg=${message}`
+            `[add-batch] invite-sent ${guest.name} (${resolvedId}) to ${groupType} — code=${code} msg=${message}`
           );
           invited += 1;
         } else if (code === 409) {
-          console.log(`[add-batch] already-in ${guest.name} (${contactId}) in ${groupType}`);
+          console.log(`[add-batch] already-in ${guest.name} (${resolvedId}) in ${groupType}`);
           added += 1;
         } else {
           console.error(
-            `[add-batch] not-added ${guest.name} (${contactId}) — code=${code} msg=${message} raw=${JSON.stringify(entry)}`
+            `[add-batch] not-added ${guest.name} (${resolvedId}) — code=${code} msg=${message} raw=${JSON.stringify(entry)}`
           );
           failed += 1;
         }
