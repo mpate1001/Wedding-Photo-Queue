@@ -12,8 +12,8 @@ Four phases that transform a test-mode demo into a wedding-day-ready tool. Phase
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Extend the data schema, wire Zustand state, and verify real notifications deliver to phones
-- [ ] **Phase 01.1: Security Hardening + Twilio Removal** - Auth-gate all API routes, remove dead Twilio/SMS code, fix email XSS, server-side dedup, WhatsApp init race fix
+- [x] **Phase 1: Foundation** - Extend the data schema, wire Zustand state, and verify real notifications deliver to phones
+- [x] **Phase 01.1: Security Hardening + Twilio Removal** - Auth-gate all API routes, remove dead Twilio/SMS code, fix email XSS, server-side dedup, WhatsApp init race fix
 - [ ] **Phase 2: Queue Mechanics** - Build auto-resend, re-queue-to-back, and coordinator arrival confirmation on top of a verified stack
 - [ ] **Phase 3: UI/UX Overhaul** - Redesign the dashboard for mobile-first, one-tap coordinator use with shadcn/ui components
 - [ ] **Phase 4: Polish** - Add progressive enhancements: haptics, batch queue, auto-advance, and performance hardening
@@ -46,9 +46,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 01.1-01-PLAN.md — Create requireAuth + escapeHtml helpers, wire auth into diagnostic routes, update dashboard Authorization headers, clean up types
-- [ ] 01.1-02-PLAN.md — Overhaul notify route (auth gate + remove Twilio/SMS + escapeHtml + server-side dedup + whenReady), remove twilio package
-- [ ] 01.1-03-PLAN.md — Fix WhatsApp singleton init race (cache init promise, add whenReady), remove hardcoded Chromium path
+- [x] 01.1-01-PLAN.md — Create requireAuth + escapeHtml helpers, wire auth into diagnostic routes, update dashboard Authorization headers, clean up types
+- [x] 01.1-02-PLAN.md — Overhaul notify route (auth gate + remove Twilio/SMS + escapeHtml + server-side dedup + whenReady), remove twilio package
+- [x] 01.1-03-PLAN.md — Fix WhatsApp singleton init race (cache init promise, add whenReady), remove hardcoded Chromium path
 
 ### Phase 2: Queue Mechanics
 **Goal**: The coordinator can manage no-shows automatically and confirm arrivals without manual intervention
@@ -93,8 +93,8 @@ Phases execute in numeric order: 1 → 01.1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 4/4 | Complete |  |
-| 01.1 Security Hardening | 0/3 | Not started | - |
+| 1. Foundation | 4/4 | Complete | 2026-04-12 |
+| 01.1 Security Hardening | 3/3 | Complete | 2026-05-09 |
 | 2. Queue Mechanics | 0/TBD | Not started | - |
 | 3. UI/UX Overhaul | 0/TBD | Not started | - |
 | 4. Polish | 0/TBD | Not started | - |
