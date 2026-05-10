@@ -97,6 +97,7 @@ None yet.
 | Date       | Slug                                       | Files | Status   |
 |------------|--------------------------------------------|-------|----------|
 | 2026-05-09 | reconcile-phase-01-1-docs-to-reflect-shi   | 2     | Complete |
+| 2026-05-09 | fix-auth-failure-leaving-whatsapp-init-p   | 1     | Complete |
 
 ## Session Continuity
 
