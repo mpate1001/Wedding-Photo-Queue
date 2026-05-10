@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const groupChat = chat as any;
 
     // Resolve LID for addParticipants — see lib/resolve-lid.ts for why
-    const resolvedId = await resolveLidForAdd(client, raw);
+    const resolvedId = await resolveLidForAdd(client, groupId, raw);
     if (!resolvedId) {
       console.log(`[add-one] not-on-whatsapp ${contactId}`);
       return NextResponse.json({

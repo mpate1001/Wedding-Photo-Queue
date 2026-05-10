@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       const raw = guest.phone.replace(/\D/g, '');
 
       try {
-        const resolvedId = await resolveLidForAdd(client, raw);
+        const resolvedId = await resolveLidForAdd(client, groupId, raw);
         if (!resolvedId) {
           console.log(`[add-batch] not-on-whatsapp ${guest.name} (${raw})`);
           failed += 1;
