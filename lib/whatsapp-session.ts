@@ -46,6 +46,7 @@ function initClient(): Promise<Client> {
 
     client.on('auth_failure', (msg) => {
       global.__whatsappStatus = 'auth_failure';
+      global.__whatsappInitPromise = undefined;
       console.error('[WhatsApp] Auth failure:', msg);
       reject(new Error(`WhatsApp auth failure: ${msg}`));
     });
