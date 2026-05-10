@@ -98,6 +98,7 @@ None yet.
 |------------|--------------------------------------------|-------|----------|
 | 2026-05-09 | reconcile-phase-01-1-docs-to-reflect-shi   | 2     | Complete |
 | 2026-05-09 | fix-auth-failure-leaving-whatsapp-init-p   | 1     | Complete |
+| 2026-05-09 | fix-lid-is-missing-in-chat-table-when-ad   | 3     | Complete |
 
 ## Session Continuity
 
